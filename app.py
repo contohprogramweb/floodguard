@@ -3,6 +3,7 @@ import config
 from utils import hash_password, verify_password
 from models import SensorBoxModel, DataSensorModel, HasilKlasifikasiModel, NotifikasiModel
 from functools import wraps  # tambahkan ini
+from database import init_connection_pool
 
 def login_required(f):
     @wraps(f)                 # gunakan wraps agar nama fungsi tetap
@@ -17,6 +18,10 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = config.SECRET_KEY
     app.debug = False          # ganti True jika ingin melihat error detail (development)
+    
+    # Inisialisasi connection pool saat aplikasi start
+    with app.app_context():
+        init_connection_pool(pool_size=5, pool_name="iot_pool")
 
     @app.route('/')
     @login_required
