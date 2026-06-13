@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Edit Sensor Box{% endblock %}
+{% block page_title %}Edit Sensor Box{% endblock %}
+{% block breadcrumb %}FloodGuard / Dashboard / Edit{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px;">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Edit Data Sensor Box</div>
+      <div class="card-subtitle">Perbarui informasi pemilik</div>
+    </div>
+  </div>
+
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Kode Sensor Box</label>
+      <input type="text" class="form-control" value="{{ sensor_box.kode_sensorbox }}" disabled
+             style="background:var(--surface2);opacity:.7;cursor:not-allowed;">
+      <p class="hint" style="margin-top:6px;">Kode sensor box tidak dapat diubah.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nama Pemilik</label>
+      <input type="text" name="nama_pemilik" class="form-control"
+             value="{{ sensor_box.nama_pemilik }}" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Alamat Pemasangan</label>
+      <input type="text" name="alamat_pemilik" class="form-control"
+             value="{{ sensor_box.alamat_pemilik }}" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nomor WhatsApp</label>
+      <input type="tel" name="nomor_whatsapp" class="form-control"
+             value="{{ sensor_box.nomor_whatsapp }}" required
+             inputmode="numeric">
+      <p class="hint">Format: 628xxx (tanpa + atau 0 di depan)</p>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+    <div class="form-group">
+      <label class="form-label">Password Baru (opsional)</label>
+      <input type="password" name="new_password" class="form-control"
+             placeholder="Kosongkan jika tidak ingin mengubah">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Konfirmasi Password Baru</label>
+      <input type="password" name="confirm_password" class="form-control"
+             placeholder="Ulangi password baru">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Kembali
+      </a>
+      <button type="submit" class="btn btn-primary" style="flex:1;">
+        <i class="fa-solid fa-save"></i> Simpan Perubahan
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

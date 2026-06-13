@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}FloodGuard / Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid mb-6">
+  <div class="stat-card blue">
+    <div class="stat-top">
+      <div class="stat-icon"><i class="fa-solid fa-wave-square"></i></div>
+    </div>
+    <div class="stat-value">{{ total_sensor }}</div>
+    <div class="stat-label">Total Data Sensor</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-top">
+      <div class="stat-icon"><i class="fa-solid fa-brain"></i></div>
+    </div>
+    <div class="stat-value">{{ total_klasifikasi }}</div>
+    <div class="stat-label">Hasil Klasifikasi</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-top">
+      <div class="stat-icon"><i class="fa-solid fa-bell"></i></div>
+    </div>
+    <div class="stat-value">{{ total_notifikasi }}</div>
+    <div class="stat-label">Notifikasi Terkirim</div>
+  </div>
+  <div class="stat-card {% if latest_status and latest_status.status_air|lower not in ['normal','aman'] %}red{% else %}green{% endif %}">
+    <div class="stat-top">
+      <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    </div>
+    <div class="stat-value" style="font-size:16px;line-height:1.3;">
+      {{ latest_status.status_air if latest_status else '—' }}
+    </div>
+    <div class="stat-label">Status Terakhir</div>
+  </div>
+</div>
+
+<div class="grid-2 mb-6">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Informasi Sensor Box</div>
+        <div class="card-subtitle">Data alat terdaftar</div>
+      </div>
+      <a href="{{ url_for('edit_sensorbox') }}" class="btn btn-secondary btn-sm" style="flex-shrink:0;">
+        <i class="fa-solid fa-pen"></i><span class="btn-label"> Edit</span>
+      </a>
+    </div>
+    {% if sensor_box %}
+    <div class="info-list">
+      <div class="info-row">
+        <span class="info-label">Kode</span>
+        <span class="font-mono" style="background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);
+          border-radius:6px;padding:2px 9px;color:var(--accent);font-size:13px;">
+          {{ sensor_box.kode_sensorbox }}
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Nama</span>
+        <span class="info-val">{{ sensor_box.nama_pemilik }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Alamat</span>
+        <span class="info-val">{{ sensor_box.alamat_pemilik }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">WhatsApp</span>
+        <span class="info-val font-mono" style="font-size:12px;">{{ sensor_box.nomor_whatsapp }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Akses API ESP32</div>
+        <div class="card-subtitle">Endpoint kirim data sensor</div>
+      </div>
+    </div>
+    <div class="code-block">
+      <div class="code-comment">// POST Request</div>
+      <div><span class="code-method">POST</span> <span class="code-url">/api/sensor-data</span></div>
+      <div class="code-comment" style="margin-top:8px;">// Body JSON / form-data</div>
+      <div>{</div>
+      <div class="code-body">
+        <span class="code-key">"kode_sensorbox"</span>: <span class="code-str">"{{ sensor_box.kode_sensorbox if sensor_box else 'KODE' }}"</span>,<br>
+        <span class="code-key">"tinggi_air"</span>: <span class="code-num">120</span>,<br>
+        <span class="code-key">"suhu"</span>: <span class="code-num">28.5</span>,<br>
+        <span class="code-key">"kelembaban"</span>: <span class="code-num">80</span>,<br>
+        <span class="code-key">"curah_hujan"</span>: <span class="code-num">15</span>
+      </div>
+      <div>}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .info-list { display: flex; flex-direction: column; gap: 0; }
+  .info-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; padding: 9px 0;
+    border-bottom: 1px solid rgba(30,45,69,.5);
+    font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--text-muted); flex-shrink: 0; min-width: 70px; padding-top: 1px; }
+  .info-val { text-align: right; word-break: break-word; }
+  .code-block {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.9;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .code-comment { color: var(--text-muted); }
+  .code-method  { color: #f59e0b; }
+  .code-url     { color: var(--accent); }
+  .code-key     { color: #a5b4fc; }
+  .code-str     { color: #34d399; }
+  .code-num     { color: #fbbf24; }
+  .code-body    { padding-left: 14px; }
+  @media (max-width: 390px) {
+    .btn-label { display: none; }
+  }
+</style>
+{% endblock %}
