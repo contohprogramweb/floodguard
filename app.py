@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for, session, flash, request, render_template
 import config
 from utils import hash_password, verify_password
-from models import SensorBoxModel
+from models import SensorBoxModel, DataSensorModel, HasilKlasifikasiModel, NotifikasiModel
 from functools import wraps  # tambahkan ini
 
 def login_required(f):
@@ -185,6 +185,83 @@ def create_app():
             return redirect(url_for('dashboard'))
 
         return render_template('dashboard/edit.html', sensor_box=sensor_box)
+
+    # ==================== ROUTE SENSOR ====================
+    @app.route('/sensor')
+    @login_required
+    def sensor():
+        id_sb = session['sensorbox_id']
+        page = request.args.get('page', 1, type=int)
+        bulan = request.args.get('bulan', '', type=str)
+        tahun = request.args.get('tahun', '', type=str)
+
+        result = DataSensorModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+        chart_data = DataSensorModel.get_chart_data(id_sb, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+
+        # Prepare chart labels and data
+        chart_labels = [row['tanggal'].strftime('%d/%m') if row['tanggal'] else '' for row in chart_data]
+        chart_tinggi = [round(row['tinggi_air'], 2) if row['tinggi_air'] else 0 for row in chart_data]
+        chart_suhu = [round(row['suhu'], 2) if row['suhu'] else 0 for row in chart_data]
+        chart_kelembaban = [round(row['kelembaban'], 2) if row['kelembaban'] else 0 for row in chart_data]
+        chart_hujan = [round(row['curah_hujan'], 2) if row['curah_hujan'] else 0 for row in chart_data]
+
+        return render_template('sensor/index.html',
+                               data=result['data'],
+                               total=result['total'],
+                               total_pages=result['total_pages'],
+                               page=page,
+                               bulan=bulan,
+                               tahun=tahun,
+                               chart_labels=chart_labels,
+                               chart_tinggi=chart_tinggi,
+                               chart_suhu=chart_suhu,
+                               chart_kelembaban=chart_kelembaban,
+                               chart_hujan=chart_hujan)
+
+    # ==================== ROUTE KLASIFIKASI ====================
+    @app.route('/klasifikasi')
+    @login_required
+    def klasifikasi():
+        id_sb = session['sensorbox_id']
+        page = request.args.get('page', 1, type=int)
+        bulan = request.args.get('bulan', '', type=str)
+        tahun = request.args.get('tahun', '', type=str)
+
+        result = HasilKlasifikasiModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+        chart_data = HasilKlasifikasiModel.get_chart_data(id_sb, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+
+        # Prepare chart data
+        chart_labels = [row['status_air'] for row in chart_data]
+        chart_values = [row['cnt'] for row in chart_data]
+
+        return render_template('klasifikasi/index.html',
+                               data=result['data'],
+                               total=result['total'],
+                               total_pages=result['total_pages'],
+                               page=page,
+                               bulan=bulan,
+                               tahun=tahun,
+                               chart_labels=chart_labels,
+                               chart_values=chart_values)
+
+    # ==================== ROUTE NOTIFIKASI ====================
+    @app.route('/notifikasi')
+    @login_required
+    def notifikasi():
+        id_sb = session['sensorbox_id']
+        page = request.args.get('page', 1, type=int)
+        bulan = request.args.get('bulan', '', type=str)
+        tahun = request.args.get('tahun', '', type=str)
+
+        result = NotifikasiModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+
+        return render_template('notifikasi/index.html',
+                               data=result['data'],
+                               total=result['total'],
+                               total_pages=result['total_pages'],
+                               page=page,
+                               bulan=bulan,
+                               tahun=tahun)
 
     return app
 
