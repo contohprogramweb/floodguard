@@ -95,6 +95,17 @@
       <div>}</div>
     </div>
   </div>
+  <div class="mt-4 quick-links">
+    <a href="{{ url_for('sensor') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-microchip"></i> Sensor
+    </a>
+    <a href="{{ url_for('klasifikasi') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-chart-pie"></i> Klasifikasi
+    </a>
+    <a href="{{ url_for('notifikasi') }}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-bell"></i> Notifikasi
+    </a>
+  </div>
 </div>
 {% endblock %}
 
