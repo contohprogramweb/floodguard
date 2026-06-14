@@ -5,9 +5,6 @@
 
 {% block extra_css %}
 <style>
-  .chart-container { position: relative; height: 260px; }
-  @media (max-width: 768px) { .chart-container { height: 200px; } }
-  
   /* Mobile: card-list layout untuk notifikasi */
   @media (max-width: 600px) {
     .notif-table thead { display: none; }
@@ -41,19 +38,6 @@
 {% endblock %}
 
 {% block content %}
-<!-- Chart -->
-<div class="card mb-6">
-  <div class="card-header">
-    <div>
-      <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Grafik Tinggi Air (Timeseries)</div>
-      <div class="card-subtitle">Data tinggi air saat notifikasi dikirim</div>
-    </div>
-  </div>
-  <div class="chart-container">
-    <canvas id="notifChart"></canvas>
-  </div>
-</div>
-
 <div class="card">
   <div class="card-header">
     <div>
@@ -153,99 +137,4 @@
   </div>
   {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const labels = {{ chart_labels|safe }};
-const dataTinggi = {{ chart_tinggi|safe }};
-const dataStatus = {{ chart_status|safe }};
-
-// Map status ke warna
-const statusColors = {
-  'normal': '#10b981',
-  'aman': '#10b981',
-  'waspada': '#f59e0b',
-  'siaga': '#f59e0b',
-  'bahaya': '#ef4444',
-  'tinggi': '#ef4444'
-};
-
-// Fungsi untuk mendapatkan warna berdasarkan status
-const getBorderColor = (status) => {
-  const s = (status || '').toLowerCase();
-  return statusColors[s] || '#6366f1';
-};
-
-// Buat array border dan background colors
-const borderColors = dataStatus.map(s => getBorderColor(s));
-const bgColors = dataStatus.map(s => {
-  const hex = getBorderColor(s);
-  return hex.replace('rgb', 'rgba').replace(')', ', 0.1)');
-});
-
-const isMobile = window.innerWidth < 600;
-const ctx = document.getElementById('notifChart').getContext('2d');
-
-new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels,
-    datasets: [{
-      label: 'Tinggi Air (cm)',
-      data: dataTinggi,
-      borderColor: borderColors,
-      backgroundColor: bgColors.map(c => c.replace(')', ', 0.15)').replace('rgba', 'rgba')),
-      borderWidth: 2,
-      pointRadius: isMobile ? 2 : 3,
-      pointBackgroundColor: borderColors,
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1,
-      tension: 0.4,
-      fill: true
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        backgroundColor: '#1a2235',
-        borderColor: '#1e2d45',
-        borderWidth: 1,
-        titleColor: '#e2e8f0',
-        bodyColor: '#94a3b8',
-        callbacks: {
-          label: function(context) {
-            const status = dataStatus[context.dataIndex];
-            return `Tinggi: ${context.parsed.y} cm (${status})`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: 'rgba(30,45,69,.5)' },
-        ticks: { 
-          color: '#64748b',
-          font: { size: isMobile ? 9 : 11 },
-          maxRotation: 45,
-          autoSkip: isMobile
-        }
-      },
-      y: {
-        grid: { color: 'rgba(30,45,69,.5)' },
-        ticks: { 
-          color: '#64748b',
-          font: { size: isMobile ? 9 : 11 }
-        }
-      }
-    }
-  }
-});
-</script>
 {% endblock %}
