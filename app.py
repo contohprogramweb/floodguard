@@ -297,16 +297,20 @@ def create_app():
     @login_required
     def klasifikasi():
         from database import get_db_connection
+        from datetime import datetime
         id_sb = session['sensorbox_id']
         page = request.args.get('page', 1, type=int)
-        bulan = request.args.get('bulan', '', type=str)
-        tahun = request.args.get('tahun', '', type=str)
+        
+        # Set default values to current month and year
+        now = datetime.now()
+        bulan = request.args.get('bulan', str(now.month), type=str)
+        tahun = request.args.get('tahun', str(now.year), type=str)
 
         # Buka koneksi database secara eksplisit di route
         conn = get_db_connection()
         if conn is None:
             flash('Gagal terhubung ke database.', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_siaga=[], chart_bahaya=[])
 
         try:
             cursor = conn.cursor(dictionary=True)
@@ -331,7 +335,7 @@ def create_app():
             """
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['cnt']
-            per_page = 10
+            per_page = 20
             total_pages = (total + per_page - 1) // per_page
             
             # Get paginated data
@@ -348,17 +352,16 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
             
-            # Get chart data - Timeseries per bulan
+            # Get chart data - Individual classification data (not daily averages)
+            # Data follows what's displayed in the table (filtered by month/year)
             chart_sql = f"""
-                SELECT DATE_FORMAT(ds.waktu, '%%Y-%%m') as periode, 
-                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%normal%%' OR LOWER(hk.status_air) LIKE '%%aman%%' THEN 1 ELSE 0 END) as normal,
-                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%siaga%%' OR LOWER(hk.status_air) LIKE '%%waspada%%' OR LOWER(hk.status_air) LIKE '%%sedang%%' THEN 1 ELSE 0 END) as siaga,
-                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%bahaya%%' OR LOWER(hk.status_air) LIKE '%%tinggi%%' THEN 1 ELSE 0 END) as bahaya
+                SELECT ds.waktu,
+                       hk.status_air,
+                       hk.probabilitas
                 FROM hasil_klasifikasi hk
                 JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
                 {where_clause}
-                GROUP BY DATE_FORMAT(ds.waktu, '%%Y-%%m')
-                ORDER BY periode ASC
+                ORDER BY ds.waktu ASC, hk.id_hasil_klasifikasi ASC
             """
             # Reset params for chart query (hanya id_sb, bulan, tahun)
             chart_params = [id_sb]
@@ -369,11 +372,30 @@ def create_app():
             cursor.execute(chart_sql, chart_params)
             chart_data = cursor.fetchall()
             
-            # Prepare chart labels and values for timeseries
-            chart_labels = [row['periode'] for row in chart_data]
-            chart_normal = [row['normal'] or 0 for row in chart_data]
-            chart_siaga = [row['siaga'] or 0 for row in chart_data]
-            chart_bahaya = [row['bahaya'] or 0 for row in chart_data]
+            # Prepare chart labels and data - individual classification items
+            chart_labels = [row['waktu'].strftime('%d/%m %H:%M') if row['waktu'] else '' for row in chart_data]
+            
+            # Count status per data point for the chart
+            chart_normal = []
+            chart_siaga = []
+            chart_bahaya = []
+            
+            for row in chart_data:
+                status = row['status_air'].lower() if row['status_air'] else ''
+                normal_count = 0
+                siaga_count = 0
+                bahaya_count = 0
+                
+                if 'normal' in status or 'aman' in status:
+                    normal_count = 1
+                elif 'siaga' in status or 'waspada' in status or 'sedang' in status:
+                    siaga_count = 1
+                elif 'bahaya' in status or 'tinggi' in status:
+                    bahaya_count = 1
+                
+                chart_normal.append(normal_count)
+                chart_siaga.append(siaga_count)
+                chart_bahaya.append(bahaya_count)
 
             return render_template('klasifikasi/index.html',
                                    data=data,
