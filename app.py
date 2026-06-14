@@ -398,10 +398,14 @@ def create_app():
     @login_required
     def notifikasi():
         from database import get_db_connection
+        from datetime import datetime
         id_sb = session['sensorbox_id']
         page = request.args.get('page', 1, type=int)
-        bulan = request.args.get('bulan', '', type=str)
-        tahun = request.args.get('tahun', '', type=str)
+        
+        # Set default values to current month and year
+        now = datetime.now()
+        bulan = request.args.get('bulan', str(now.month), type=str)
+        tahun = request.args.get('tahun', str(now.year), type=str)
 
         # Buka koneksi database secara eksplisit di route
         conn = get_db_connection()
@@ -433,7 +437,7 @@ def create_app():
             """
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['cnt']
-            per_page = 10
+            per_page = 20
             total_pages = (total + per_page - 1) // per_page
             
             # Get paginated data
