@@ -5,6 +5,9 @@
 
 {% block extra_css %}
 <style>
+  .chart-container { position: relative; height: 260px; }
+  @media (max-width: 768px) { .chart-container { height: 200px; } }
+
   /* ── Mobile card-row untuk tabel sensor ── */
   @media (max-width: 600px) {
     .sensor-table thead { display: none; }
@@ -34,6 +37,19 @@
 {% endblock %}
 
 {% block content %}
+<!-- Chart -->
+<div class="card mb-6">
+  <div class="card-header">
+    <div>
+      <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Grafik Bulan Ini</div>
+      <div class="card-subtitle">Rata-rata harian parameter sensor</div>
+    </div>
+  </div>
+  <div class="chart-container">
+    <canvas id="sensorChart"></canvas>
+  </div>
+</div>
+
 <!-- Filter + Table -->
 <div class="card">
   <div class="card-header">
@@ -62,7 +78,7 @@
       <button type="submit" class="btn btn-primary btn-sm">
         <i class="fa-solid fa-check"></i> Terapkan
       </button>
-      <a href="{{ url_for('sensor') }}" class="btn btn-secondary btn-sm">
+      <a href="{{ url_for('sensor.index') }}" class="btn btn-secondary btn-sm">
         <i class="fa-solid fa-rotate-left"></i> Reset
       </a>
     </div>
@@ -140,4 +156,42 @@
 
 {% block extra_css2 %}{% endblock %}
 
-{% block extra_js %}{% endblock %}
+{% block extra_js %}
+<script>
+const labels = {{ chart_labels|safe }};
+const dataTinggi = {{ chart_tinggi|safe }};
+const dataSuhu   = {{ chart_suhu|safe }};
+const dataKelembaban = {{ chart_kelembaban|safe }};
+const dataHujan  = {{ chart_hujan|safe }};
+
+const isMobile = window.innerWidth < 600;
+const ctx = document.getElementById('sensorChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      { label:'Tinggi Air (cm)', data:dataTinggi, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Suhu (°C)',       data:dataSuhu,   borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Kelembaban (%)',  data:dataKelembaban, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Curah Hujan (mm)',data:dataHujan,  borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    interaction: { mode: 'index', intersect: false },
+    plugins:{
+      legend:{
+        position: isMobile ? 'bottom' : 'top',
+        labels:{ color:'#94a3b8', font:{family:'Space Grotesk',size: isMobile ? 10 : 12}, boxWidth:12, padding: isMobile ? 8 : 16 }
+      },
+      tooltip:{ backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
+    },
+    scales:{
+      x:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
+      y:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
+    }
+  }
+});
+</script>
+{% endblock %}
