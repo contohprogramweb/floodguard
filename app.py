@@ -396,7 +396,7 @@ def create_app():
         conn = get_db_connection()
         if conn is None:
             flash('Gagal terhubung ke database.', 'danger')
-            return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)
+            return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_tinggi=[], chart_status=[])
 
         try:
             cursor = conn.cursor(dictionary=True)
@@ -440,13 +440,41 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
 
+            # Get chart data (timeseries)
+            chart_sql = f"""
+                SELECT DATE_FORMAT(n.waktu_kirim, '%d/%m %H:%i') as waktu_label,
+                       ds.tinggi_air,
+                       hk.status_air
+                FROM notifikasi n
+                JOIN hasil_klasifikasi hk ON n.id_hasil_klasifikasi = hk.id_hasil_klasifikasi
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+                ORDER BY n.waktu_kirim ASC
+            """
+            # Reset params for chart query
+            chart_params = [id_sb]
+            if bulan:
+                chart_params.append(int(bulan))
+            if tahun:
+                chart_params.append(int(tahun))
+            cursor.execute(chart_sql, chart_params)
+            chart_data = cursor.fetchall()
+            
+            # Prepare chart labels and data
+            chart_labels = [row['waktu_label'] if row['waktu_label'] else '' for row in chart_data]
+            chart_tinggi = [round(row['tinggi_air'], 2) if row['tinggi_air'] else 0 for row in chart_data]
+            chart_status = [row['status_air'] for row in chart_data]
+
             return render_template('notifikasi/index.html',
                                    data=data,
                                    total=total,
                                    total_pages=total_pages,
                                    page=page,
                                    bulan=bulan,
-                                   tahun=tahun)
+                                   tahun=tahun,
+                                   chart_labels=chart_labels,
+                                   chart_tinggi=chart_tinggi,
+                                   chart_status=chart_status)
         except Exception as e:
             flash(f'Gagal mengambil data notifikasi: {str(e)}', 'danger')
             return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)

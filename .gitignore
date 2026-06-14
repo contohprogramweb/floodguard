@@ -4,28 +4,59 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Logs and temp files
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
+*.pot
+*.po
+*~
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.DS_Store
+
+# Web
 *.tmp
-*.swp
+*.temp
+Thumbs.db
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.dev
+.env.prod
+*.env
+.env.*
 
-# Editors
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-
-# Build artifacts
+# Build and distribution artifacts
 dist/
 build/
-target/
+*.egg-info/
+.sass-cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 ```
