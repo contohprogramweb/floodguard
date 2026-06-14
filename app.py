@@ -195,15 +195,73 @@ def create_app():
     @app.route('/sensor')
     @login_required
     def sensor():
+        from database import get_db_connection
         id_sb = session['sensorbox_id']
         page = request.args.get('page', 1, type=int)
         bulan = request.args.get('bulan', '', type=str)
         tahun = request.args.get('tahun', '', type=str)
 
-        try:
-            result = DataSensorModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
-            chart_data = DataSensorModel.get_chart_data(id_sb, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+        # Buka koneksi database secara eksplisit di route
+        conn = get_db_connection()
+        if conn is None:
+            flash('Gagal terhubung ke database.', 'danger')
+            return render_template('sensor/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_tinggi=[], chart_suhu=[], chart_kelembaban=[], chart_hujan=[])
 
+        try:
+            # Gunakan koneksi yang sudah dibuka untuk mengambil data
+            cursor = conn.cursor(dictionary=True)
+            
+            # Build WHERE clause
+            where_clause = "WHERE ds.id_sensorbox = %s"
+            params = [id_sb]
+            
+            if bulan:
+                where_clause += " AND MONTH(ds.waktu) = %s"
+                params.append(int(bulan))
+            if tahun:
+                where_clause += " AND YEAR(ds.waktu) = %s"
+                params.append(int(tahun))
+            
+            # Get total count
+            count_sql = f"SELECT COUNT(*) as cnt FROM data_sensor ds {where_clause}"
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()['cnt']
+            per_page = 10
+            total_pages = (total + per_page - 1) // per_page
+            
+            # Get paginated data
+            offset = (page - 1) * per_page
+            data_sql = f"""
+                SELECT * FROM data_sensor ds 
+                {where_clause}
+                ORDER BY ds.waktu DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([per_page, offset])
+            cursor.execute(data_sql, params)
+            data = cursor.fetchall()
+            
+            # Get chart data
+            chart_sql = f"""
+                SELECT DATE(ds.waktu) as tanggal,
+                       AVG(ds.tinggi_air) as tinggi_air,
+                       AVG(ds.suhu) as suhu,
+                       AVG(ds.kelembaban) as kelembaban,
+                       AVG(ds.curah_hujan) as curah_hujan
+                FROM data_sensor ds
+                {where_clause}
+                GROUP BY DATE(ds.waktu)
+                ORDER BY tanggal ASC
+            """
+            # Reset params for chart query (hanya id_sb, bulan, tahun)
+            chart_params = [id_sb]
+            if bulan:
+                chart_params.append(int(bulan))
+            if tahun:
+                chart_params.append(int(tahun))
+            cursor.execute(chart_sql, chart_params)
+            chart_data = cursor.fetchall()
+            
             # Prepare chart labels and data
             chart_labels = [row['tanggal'].strftime('%d/%m') if row['tanggal'] else '' for row in chart_data]
             chart_tinggi = [round(row['tinggi_air'], 2) if row['tinggi_air'] else 0 for row in chart_data]
@@ -212,9 +270,9 @@ def create_app():
             chart_hujan = [round(row['curah_hujan'], 2) if row['curah_hujan'] else 0 for row in chart_data]
 
             return render_template('sensor/index.html',
-                                   data=result['data'],
-                                   total=result['total'],
-                                   total_pages=result['total_pages'],
+                                   data=data,
+                                   total=total,
+                                   total_pages=total_pages,
                                    page=page,
                                    bulan=bulan,
                                    tahun=tahun,
@@ -226,6 +284,9 @@ def create_app():
         except Exception as e:
             flash(f'Gagal mengambil data sensor: {str(e)}', 'danger')
             return render_template('sensor/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_tinggi=[], chart_suhu=[], chart_kelembaban=[], chart_hujan=[])
+        finally:
+            if conn:
+                conn.close()
 
     # ==================== ROUTE KLASIFIKASI ====================
     @app.route('/klasifikasi')
