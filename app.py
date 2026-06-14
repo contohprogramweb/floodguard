@@ -454,6 +454,76 @@ def create_app():
             if conn:
                 conn.close()
 
+    # ==================== API SENSOR ====================
+    @app.route('/api/sensor', methods=['POST'])
+    def api_simpan_sensor():
+        """
+        API untuk menyimpan data sensor dari IoT device.
+        Parameter yang diperlukan:
+        - kode_sensorbox: kode sensor box (harus terdaftar di tabel sensor_box)
+        - tinggi_air: nilai tinggi air
+        - suhu: nilai suhu
+        - kelembaban: nilai kelembaban
+        - curah_hujan: nilai curah hujan
+        """
+        from database import get_db_connection
+        
+        # Ambil parameter dari request
+        kode_sensorbox = request.form.get('kode_sensorbox', '').strip().upper()
+        tinggi_air = request.form.get('tinggi_air')
+        suhu = request.form.get('suhu')
+        kelembaban = request.form.get('kelembaban')
+        curah_hujan = request.form.get('curah_hujan')
+        
+        # Validasi parameter wajib
+        if not kode_sensorbox:
+            return {'status': 'error', 'message': 'kode_sensorbox wajib diisi'}, 400
+        
+        # Buka koneksi database
+        conn = get_db_connection()
+        if conn is None:
+            return {'status': 'error', 'message': 'Gagal terhubung ke database'}, 500
+        
+        try:
+            cursor = conn.cursor(dictionary=True)
+            
+            # Periksa apakah kode_sensorbox ada di tabel sensor_box
+            cursor.execute(
+                "SELECT id_sensorbox FROM sensor_box WHERE kode_sensorbox = %s",
+                (kode_sensorbox,)
+            )
+            sensor_box = cursor.fetchone()
+            
+            # Jika kode_sensorbox tidak ditemukan, do nothing
+            if sensor_box is None:
+                return {'status': 'error', 'message': 'kode_sensorbox tidak ditemukan'}, 404
+            
+            # Kode sensorbox ditemukan, lanjutkan proses simpan
+            id_sensorbox = sensor_box['id_sensorbox']
+            
+            # Simpan data sensor
+            cursor.execute(
+                """INSERT INTO data_sensor 
+                   (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
+            )
+            conn.commit()
+            
+            id_data_sensor = cursor.lastrowid
+            
+            return {
+                'status': 'success',
+                'message': 'Data sensor berhasil disimpan',
+                'id_data_sensor': id_data_sensor
+            }, 201
+            
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}, 500
+        finally:
+            if conn:
+                conn.close()
+
     return app
 
 # Untuk WSGI (production)
