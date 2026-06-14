@@ -344,14 +344,17 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
             
-            # Get chart data
+            # Get chart data - Timeseries per bulan
             chart_sql = f"""
-                SELECT hk.status_air, COUNT(*) as cnt
+                SELECT DATE_FORMAT(ds.waktu, '%%Y-%%m') as periode, 
+                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%normal%%' OR LOWER(hk.status_air) LIKE '%%aman%%' THEN 1 ELSE 0 END) as normal,
+                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%siaga%%' OR LOWER(hk.status_air) LIKE '%%waspada%%' OR LOWER(hk.status_air) LIKE '%%sedang%%' THEN 1 ELSE 0 END) as siaga,
+                       SUM(CASE WHEN LOWER(hk.status_air) LIKE '%%bahaya%%' OR LOWER(hk.status_air) LIKE '%%tinggi%%' THEN 1 ELSE 0 END) as bahaya
                 FROM hasil_klasifikasi hk
                 JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
                 {where_clause}
-                GROUP BY hk.status_air
-                ORDER BY cnt DESC
+                GROUP BY DATE_FORMAT(ds.waktu, '%%Y-%%m')
+                ORDER BY periode ASC
             """
             # Reset params for chart query (hanya id_sb, bulan, tahun)
             chart_params = [id_sb]
@@ -362,9 +365,11 @@ def create_app():
             cursor.execute(chart_sql, chart_params)
             chart_data = cursor.fetchall()
             
-            # Prepare chart labels and values
-            chart_labels = [row['status_air'] for row in chart_data]
-            chart_values = [row['cnt'] for row in chart_data]
+            # Prepare chart labels and values for timeseries
+            chart_labels = [row['periode'] for row in chart_data]
+            chart_normal = [row['normal'] or 0 for row in chart_data]
+            chart_siaga = [row['siaga'] or 0 for row in chart_data]
+            chart_bahaya = [row['bahaya'] or 0 for row in chart_data]
 
             return render_template('klasifikasi/index.html',
                                    data=data,
@@ -374,10 +379,12 @@ def create_app():
                                    bulan=bulan,
                                    tahun=tahun,
                                    chart_labels=chart_labels,
-                                   chart_values=chart_values)
+                                   chart_normal=chart_normal,
+                                   chart_siaga=chart_siaga,
+                                   chart_bahaya=chart_bahaya)
         except Exception as e:
             flash(f'Gagal mengambil data klasifikasi: {str(e)}', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_siaga=[], chart_bahaya=[])
         finally:
             if conn:
                 conn.close()

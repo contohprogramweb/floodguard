@@ -5,8 +5,8 @@
 
 {% block extra_css %}
 <style>
-  .chart-container { position:relative; height:240px; max-width:320px; margin:0 auto; }
-  @media (max-width:768px) { .chart-container { height:200px; max-width:280px; } }
+  .chart-container { position:relative; height:320px; margin:0 auto; }
+  @media (max-width:768px) { .chart-container { height:280px; } }
 
   @media (max-width:600px) {
     .klas-table thead { display:none; }
@@ -38,15 +38,15 @@
 {% endblock %}
 
 {% block content %}
-<!-- Donut Chart -->
+<!-- Line Chart -->
 <div class="card mb-6">
   <div class="card-header">
     <div>
-      <div class="card-title"><i class="fa-solid fa-chart-pie" style="color:var(--accent)"></i> Distribusi Status Bulan Ini</div>
-      <div class="card-subtitle">Berdasarkan hasil model klasifikasi</div>
+      <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Tren Status Klasifikasi</div>
+      <div class="card-subtitle">Grafik timeseries berdasarkan hasil model klasifikasi per bulan</div>
     </div>
   </div>
-  <div class="chart-container">
+  <div class="chart-container" style="max-width:none;height:320px;">
     <canvas id="klasChart"></canvas>
   </div>
 </div>
@@ -169,17 +169,42 @@
 {% block extra_js %}
 <script>
 const labels = {{ chart_labels|safe }};
-const values = {{ chart_values|safe }};
-const colors = ['#10b981','#f59e0b','#ef4444','#6366f1','#00d4ff','#f97316'];
+const dataNormal = {{ chart_normal|safe }};
+const dataSiaga = {{ chart_siaga|safe }};
+const dataBahaya = {{ chart_bahaya|safe }};
 const isMobile = window.innerWidth < 600;
 
 const ctx = document.getElementById('klasChart').getContext('2d');
 new Chart(ctx, {
-  type: 'doughnut',
+  type: 'line',
   data: {
     labels,
-    datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length),
-                 borderColor: '#111827', borderWidth: 3, hoverOffset: 6 }]
+    datasets: [
+      { 
+        label: 'Normal', 
+        data: dataNormal, 
+        borderColor: '#10b981', 
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        tension: 0.3,
+        fill: true
+      },
+      { 
+        label: 'Siaga', 
+        data: dataSiaga, 
+        borderColor: '#f59e0b', 
+        backgroundColor: 'rgba(245,158,11,0.1)',
+        tension: 0.3,
+        fill: true
+      },
+      { 
+        label: 'Bahaya', 
+        data: dataBahaya, 
+        borderColor: '#ef4444', 
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        tension: 0.3,
+        fill: true
+      }
+    ]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
@@ -189,6 +214,17 @@ new Chart(ctx, {
         labels: { color:'#94a3b8', font:{family:'Space Grotesk', size: isMobile ? 10 : 12}, padding: isMobile ? 8 : 14, boxWidth:12 }
       },
       tooltip: { backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
+    },
+    scales: {
+      x: { 
+        ticks: { color: '#94a3b8', font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 } },
+        grid: { color: 'rgba(30,45,69,0.5)' }
+      },
+      y: { 
+        beginAtZero: true,
+        ticks: { color: '#94a3b8', font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 } },
+        grid: { color: 'rgba(30,45,69,0.5)' }
+      }
     }
   }
 });
