@@ -268,10 +268,10 @@ def create_app():
             
             # Prepare chart labels and data
             chart_labels = [row['waktu'].strftime('%d/%m %H:%M') if row['waktu'] else '' for row in chart_data]
-            chart_tinggi = [round(row['tinggi_air'], 2) if row['tinggi_air'] else 0 for row in chart_data]
-            chart_suhu = [round(row['suhu'], 2) if row['suhu'] else 0 for row in chart_data]
-            chart_kelembaban = [round(row['kelembaban'], 2) if row['kelembaban'] else 0 for row in chart_data]
-            chart_hujan = [round(row['curah_hujan'], 2) if row['curah_hujan'] else 0 for row in chart_data]
+            chart_tinggi = [round(float(row['tinggi_air']), 2) if row['tinggi_air'] is not None else 0 for row in chart_data]
+            chart_suhu = [round(float(row['suhu']), 2) if row['suhu'] is not None else 0 for row in chart_data]
+            chart_kelembaban = [round(float(row['kelembaban']), 2) if row['kelembaban'] is not None else 0 for row in chart_data]
+            chart_hujan = [round(float(row['curah_hujan']), 2) if row['curah_hujan'] is not None else 0 for row in chart_data]
 
             return render_template('sensor/index.html',
                                    data=data,
@@ -466,6 +466,8 @@ def create_app():
                 conn.close()
 
     return app
+
+
 
 # Untuk WSGI (production)
 application = create_app()
