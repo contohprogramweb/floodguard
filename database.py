@@ -26,9 +26,11 @@ def init_connection_pool(pool_size=5, pool_name="iot_pool"):
             pool_size=pool_size,
             **DB_CONFIG
         )
+        print(f"Connection pool '{pool_name}' initialized successfully.")
         return True
     except Exception as e:
         print(f"Error initializing connection pool: {e}")
+        print(f"Database config: host={DB_CONFIG['host']}, user={DB_CONFIG['user']}, db={DB_CONFIG['database']}")
         return False
 
 def get_db_connection(max_retries=3, retry_delay=2):
