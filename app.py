@@ -396,7 +396,7 @@ def create_app():
         conn = get_db_connection()
         if conn is None:
             flash('Gagal terhubung ke database.', 'danger')
-            return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_tinggi=[], chart_status=[])
+            return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)
 
         try:
             cursor = conn.cursor(dictionary=True)
@@ -440,114 +440,16 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
 
-            # Get chart data (timeseries)
-            chart_sql = f"""
-                SELECT DATE_FORMAT(n.waktu_kirim, '%d/%m %H:%i') as waktu_label,
-                       ds.tinggi_air,
-                       hk.status_air
-                FROM notifikasi n
-                JOIN hasil_klasifikasi hk ON n.id_hasil_klasifikasi = hk.id_hasil_klasifikasi
-                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
-                {where_clause}
-                ORDER BY n.waktu_kirim ASC
-            """
-            # Reset params for chart query
-            chart_params = [id_sb]
-            if bulan:
-                chart_params.append(int(bulan))
-            if tahun:
-                chart_params.append(int(tahun))
-            cursor.execute(chart_sql, chart_params)
-            chart_data = cursor.fetchall()
-            
-            # Prepare chart labels and data
-            chart_labels = [row['waktu_label'] if row['waktu_label'] else '' for row in chart_data]
-            chart_tinggi = [round(row['tinggi_air'], 2) if row['tinggi_air'] else 0 for row in chart_data]
-            chart_status = [row['status_air'] for row in chart_data]
-
             return render_template('notifikasi/index.html',
                                    data=data,
                                    total=total,
                                    total_pages=total_pages,
                                    page=page,
                                    bulan=bulan,
-                                   tahun=tahun,
-                                   chart_labels=chart_labels,
-                                   chart_tinggi=chart_tinggi,
-                                   chart_status=chart_status)
+                                   tahun=tahun)
         except Exception as e:
             flash(f'Gagal mengambil data notifikasi: {str(e)}', 'danger')
             return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)
-        finally:
-            if conn:
-                conn.close()
-
-    # ==================== API SENSOR ====================
-    @app.route('/api/sensor', methods=['POST'])
-    def api_simpan_sensor():
-        """
-        API untuk menyimpan data sensor dari IoT device.
-        Parameter yang diperlukan:
-        - kode_sensorbox: kode sensor box (harus terdaftar di tabel sensor_box)
-        - tinggi_air: nilai tinggi air
-        - suhu: nilai suhu
-        - kelembaban: nilai kelembaban
-        - curah_hujan: nilai curah hujan
-        """
-        from database import get_db_connection
-        
-        # Ambil parameter dari request
-        kode_sensorbox = request.form.get('kode_sensorbox', '').strip().upper()
-        tinggi_air = request.form.get('tinggi_air')
-        suhu = request.form.get('suhu')
-        kelembaban = request.form.get('kelembaban')
-        curah_hujan = request.form.get('curah_hujan')
-        
-        # Validasi parameter wajib
-        if not kode_sensorbox:
-            return {'status': 'error', 'message': 'kode_sensorbox wajib diisi'}, 400
-        
-        # Buka koneksi database
-        conn = get_db_connection()
-        if conn is None:
-            return {'status': 'error', 'message': 'Gagal terhubung ke database'}, 500
-        
-        try:
-            cursor = conn.cursor(dictionary=True)
-            
-            # Periksa apakah kode_sensorbox ada di tabel sensor_box
-            cursor.execute(
-                "SELECT id_sensorbox FROM sensor_box WHERE kode_sensorbox = %s",
-                (kode_sensorbox,)
-            )
-            sensor_box = cursor.fetchone()
-            
-            # Jika kode_sensorbox tidak ditemukan, do nothing
-            if sensor_box is None:
-                return {'status': 'error', 'message': 'kode_sensorbox tidak ditemukan'}, 404
-            
-            # Kode sensorbox ditemukan, lanjutkan proses simpan
-            id_sensorbox = sensor_box['id_sensorbox']
-            
-            # Simpan data sensor
-            cursor.execute(
-                """INSERT INTO data_sensor 
-                   (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
-            )
-            conn.commit()
-            
-            id_data_sensor = cursor.lastrowid
-            
-            return {
-                'status': 'success',
-                'message': 'Data sensor berhasil disimpan',
-                'id_data_sensor': id_data_sensor
-            }, 201
-            
-        except Exception as e:
-            return {'status': 'error', 'message': str(e)}, 500
         finally:
             if conn:
                 conn.close()
