@@ -292,23 +292,84 @@ def create_app():
     @app.route('/klasifikasi')
     @login_required
     def klasifikasi():
+        from database import get_db_connection
         id_sb = session['sensorbox_id']
         page = request.args.get('page', 1, type=int)
         bulan = request.args.get('bulan', '', type=str)
         tahun = request.args.get('tahun', '', type=str)
 
-        try:
-            result = HasilKlasifikasiModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
-            chart_data = HasilKlasifikasiModel.get_chart_data(id_sb, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+        # Buka koneksi database secara eksplisit di route
+        conn = get_db_connection()
+        if conn is None:
+            flash('Gagal terhubung ke database.', 'danger')
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
 
-            # Prepare chart data
+        try:
+            cursor = conn.cursor(dictionary=True)
+            
+            # Build WHERE clause
+            where_clause = "WHERE ds.id_sensorbox = %s"
+            params = [id_sb]
+            
+            if bulan:
+                where_clause += " AND MONTH(ds.waktu) = %s"
+                params.append(int(bulan))
+            if tahun:
+                where_clause += " AND YEAR(ds.waktu) = %s"
+                params.append(int(tahun))
+            
+            # Get total count
+            count_sql = f"""
+                SELECT COUNT(*) as cnt 
+                FROM hasil_klasifikasi hk
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+            """
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()['cnt']
+            per_page = 10
+            total_pages = (total + per_page - 1) // per_page
+            
+            # Get paginated data
+            offset = (page - 1) * per_page
+            data_sql = f"""
+                SELECT hk.*, ds.tinggi_air, ds.suhu, ds.kelembaban, ds.curah_hujan, ds.waktu
+                FROM hasil_klasifikasi hk
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+                ORDER BY ds.waktu DESC, hk.id_hasil_klasifikasi DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([per_page, offset])
+            cursor.execute(data_sql, params)
+            data = cursor.fetchall()
+            
+            # Get chart data
+            chart_sql = f"""
+                SELECT hk.status_air, COUNT(*) as cnt
+                FROM hasil_klasifikasi hk
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+                GROUP BY hk.status_air
+                ORDER BY cnt DESC
+            """
+            # Reset params for chart query (hanya id_sb, bulan, tahun)
+            chart_params = [id_sb]
+            if bulan:
+                chart_params.append(int(bulan))
+            if tahun:
+                chart_params.append(int(tahun))
+            cursor.execute(chart_sql, chart_params)
+            chart_data = cursor.fetchall()
+            
+            # Prepare chart labels and values
             chart_labels = [row['status_air'] for row in chart_data]
             chart_values = [row['cnt'] for row in chart_data]
 
             return render_template('klasifikasi/index.html',
-                                   data=result['data'],
-                                   total=result['total'],
-                                   total_pages=result['total_pages'],
+                                   data=data,
+                                   total=total,
+                                   total_pages=total_pages,
                                    page=page,
                                    bulan=bulan,
                                    tahun=tahun,
@@ -317,29 +378,81 @@ def create_app():
         except Exception as e:
             flash(f'Gagal mengambil data klasifikasi: {str(e)}', 'danger')
             return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
+        finally:
+            if conn:
+                conn.close()
 
     # ==================== ROUTE NOTIFIKASI ====================
     @app.route('/notifikasi')
     @login_required
     def notifikasi():
+        from database import get_db_connection
         id_sb = session['sensorbox_id']
         page = request.args.get('page', 1, type=int)
         bulan = request.args.get('bulan', '', type=str)
         tahun = request.args.get('tahun', '', type=str)
 
+        # Buka koneksi database secara eksplisit di route
+        conn = get_db_connection()
+        if conn is None:
+            flash('Gagal terhubung ke database.', 'danger')
+            return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)
+
         try:
-            result = NotifikasiModel.get_all(id_sb, page=page, per_page=10, bulan=bulan if bulan else None, tahun=tahun if tahun else None)
+            cursor = conn.cursor(dictionary=True)
+            
+            # Build WHERE clause
+            where_clause = "WHERE ds.id_sensorbox = %s"
+            params = [id_sb]
+            
+            if bulan:
+                where_clause += " AND MONTH(n.waktu_kirim) = %s"
+                params.append(int(bulan))
+            if tahun:
+                where_clause += " AND YEAR(n.waktu_kirim) = %s"
+                params.append(int(tahun))
+            
+            # Get total count
+            count_sql = f"""
+                SELECT COUNT(*) as cnt 
+                FROM notifikasi n
+                JOIN hasil_klasifikasi hk ON n.id_hasil_klasifikasi = hk.id_hasil_klasifikasi
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+            """
+            cursor.execute(count_sql, params)
+            total = cursor.fetchone()['cnt']
+            per_page = 10
+            total_pages = (total + per_page - 1) // per_page
+            
+            # Get paginated data
+            offset = (page - 1) * per_page
+            data_sql = f"""
+                SELECT n.*, hk.status_air
+                FROM notifikasi n
+                JOIN hasil_klasifikasi hk ON n.id_hasil_klasifikasi = hk.id_hasil_klasifikasi
+                JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+                {where_clause}
+                ORDER BY n.waktu_kirim DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([per_page, offset])
+            cursor.execute(data_sql, params)
+            data = cursor.fetchall()
 
             return render_template('notifikasi/index.html',
-                                   data=result['data'],
-                                   total=result['total'],
-                                   total_pages=result['total_pages'],
+                                   data=data,
+                                   total=total,
+                                   total_pages=total_pages,
                                    page=page,
                                    bulan=bulan,
                                    tahun=tahun)
         except Exception as e:
             flash(f'Gagal mengambil data notifikasi: {str(e)}', 'danger')
             return render_template('notifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun)
+        finally:
+            if conn:
+                conn.close()
 
     return app
 
