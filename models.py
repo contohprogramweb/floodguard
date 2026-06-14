@@ -90,6 +90,23 @@ class DataSensorModel:
     """Model untuk tabel data_sensor"""
 
     @staticmethod
+    def insert(id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan):
+        """Insert data sensor baru dan return id_data_sensor"""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO data_sensor 
+                   (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    @staticmethod
     def get_all(id_sensorbox, page=1, per_page=10, bulan=None, tahun=None):
         conn = get_db_connection()
         try:
@@ -164,6 +181,23 @@ class DataSensorModel:
 
 class HasilKlasifikasiModel:
     """Model untuk tabel hasil_klasifikasi joined with data_sensor"""
+
+    @staticmethod
+    def insert(id_data_sensor, status_air, probabilitas):
+        """Insert hasil klasifikasi baru dan return id_hasil_klasifikasi"""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO hasil_klasifikasi 
+                   (id_data_sensor, status_air, probabilitas)
+                   VALUES (%s, %s, %s)""",
+                (id_data_sensor, status_air, probabilitas)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
 
     @staticmethod
     def get_all(id_sensorbox, page=1, per_page=10, bulan=None, tahun=None):
@@ -243,6 +277,23 @@ class HasilKlasifikasiModel:
 
 class NotifikasiModel:
     """Model untuk tabel notifikasi joined with hasil_klasifikasi and data_sensor"""
+
+    @staticmethod
+    def insert(id_hasil_klasifikasi, pesan):
+        """Insert notifikasi baru"""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """INSERT INTO notifikasi 
+                   (id_hasil_klasifikasi, pesan)
+                   VALUES (%s, %s)""",
+                (id_hasil_klasifikasi, pesan)
+            )
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
 
     @staticmethod
     def get_all(id_sensorbox, page=1, per_page=10, bulan=None, tahun=None):

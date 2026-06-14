@@ -1,9 +1,65 @@
-from flask import Flask, redirect, url_for, session, flash, request, render_template
+from flask import Flask, redirect, url_for, session, flash, request, render_template, jsonify
 import config
 from utils import hash_password, verify_password
 from models import SensorBoxModel, DataSensorModel, HasilKlasifikasiModel, NotifikasiModel
 from functools import wraps  # tambahkan ini
 from database import init_connection_pool
+import numpy as np
+import joblib
+import requests as http_requests
+import os
+
+# Load model klasifikasi
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'flood_model.pkl')
+
+try:
+    flood_model = joblib.load(MODEL_PATH)
+    print(f"[API] flood_model.pkl berhasil dimuat dari {MODEL_PATH}")
+except Exception as e:
+    print(f"[API] Gagal memuat flood_model.pkl: {e}")
+    flood_model = None
+
+FONNTE_TOKEN = os.environ.get('FONNTE_TOKEN', 'ISI_TOKEN_FONNTE_ANDA')
+
+
+def kirim_whatsapp(nomor, pesan):
+    """Mengirim pesan WhatsApp melalui Fonnte API"""
+    try:
+        response = http_requests.post(
+            'https://api.fonnte.com/send',
+            headers={'Authorization': FONNTE_TOKEN},
+            data={
+                'target': nomor,
+                'message': pesan,
+                'countryCode': '62'
+            },
+            timeout=10
+        )
+        return response.status_code == 200
+    except Exception as e:
+        print(f"[WhatsApp] Gagal kirim pesan: {e}")
+        return False
+
+
+def klasifikasi_status(tinggi_air, suhu, kelembaban, curah_hujan):
+    """Melakukan klasifikasi status banjir menggunakan model ML"""
+    if flood_model is None:
+        return "Tidak Diketahui", 0
+    try:
+        fitur = np.array([[
+            float(tinggi_air),
+            float(suhu),
+            float(kelembaban),
+            float(curah_hujan)
+        ]])
+        prediksi = flood_model.predict(fitur)[0]
+        probabilitas_arr = flood_model.predict_proba(fitur)[0]
+        probabilitas = int(max(probabilitas_arr) * 100)
+        return str(prediksi), probabilitas
+    except Exception as e:
+        print(f"[Klasifikasi] Error: {e}")
+        return "Error", 0
 
 def login_required(f):
     @wraps(f)                 # gunakan wraps agar nama fungsi tetap
@@ -490,6 +546,80 @@ def create_app():
         finally:
             if conn:
                 conn.close()
+
+    # ==================== ROUTE API SENSOR ====================
+    @app.route('/api/sensor', methods=['POST'])
+    def receive_sensor_data():
+        """API endpoint untuk menerima data sensor dari IoT device"""
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+
+        kode_sensorbox = data.get('kode_sensorbox')
+        tinggi_air     = data.get('tinggi_air')
+        suhu           = data.get('suhu')
+        kelembaban     = data.get('kelembaban')
+        curah_hujan    = data.get('curah_hujan')
+
+        if not all([kode_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Field tidak lengkap.'
+            }), 400
+
+        sensor_box = SensorBoxModel.find_by_kode(kode_sensorbox)
+        if not sensor_box:
+            return jsonify({
+                'status': 'ignored',
+                'message': f'kode_sensorbox "{kode_sensorbox}" tidak ditemukan.'
+            }), 200
+
+        id_sensorbox   = sensor_box['id_sensorbox']
+        nomor_whatsapp = sensor_box['nomor_whatsapp']
+        nama_pemilik   = sensor_box['nama_pemilik']
+
+        # Simpan data sensor
+        id_data_sensor = DataSensorModel.insert(
+            id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan
+        )
+
+        # Klasifikasi status banjir
+        status_air, probabilitas = klasifikasi_status(tinggi_air, suhu, kelembaban, curah_hujan)
+        
+        # Simpan hasil klasifikasi
+        id_hasil = HasilKlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
+
+        # Buat pesan notifikasi
+        pesan = (
+            f"🌊 *NOTIFIKASI BANJIR*\n"
+            f"Halo {nama_pemilik},\n"
+            f"Status: *{status_air}* ({probabilitas}%)\n"
+            f"Tinggi Air : {tinggi_air} cm\n"
+            f"Suhu       : {suhu} °C\n"
+            f"Kelembaban : {kelembaban} %\n"
+            f"Curah Hujan: {curah_hujan} mm\n"
+            f"Harap waspada dan pantau kondisi sekitar."
+        )
+
+        # Kirim WhatsApp hanya jika status tidak normal/aman
+        terkirim = False
+        if status_air.lower() not in ['normal', 'aman']:
+            terkirim = kirim_whatsapp(nomor_whatsapp, pesan)
+
+        # Simpan notifikasi ke database
+        NotifikasiModel.insert(id_hasil, pesan)
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'id_data_sensor': id_data_sensor,
+                'id_hasil_klasifikasi': id_hasil,
+                'status_air': status_air,
+                'probabilitas': probabilitas,
+                'notifikasi_terkirim': terkirim
+            }
+        }), 201
 
     return app
 
