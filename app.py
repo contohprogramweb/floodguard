@@ -656,17 +656,42 @@ def create_app():
 
         print(f"[Notifikasi] Status saat ini: {status_air}, Status terakhir: {last_status}, Kirim: {should_send}, Alasan: {reason}")
 
-        # Buat pesan notifikasi
-        pesan = (
-            f"ðŸŒŠ *NOTIFIKASI BANJIR*\n"
-            f"Halo {nama_pemilik},\n"
-            f"Status: *{status_air}* ({probabilitas}%)\n"
-            f"Tinggi Air : {tinggi_air} cm\n"
-            f"Suhu       : {suhu} Â°C\n"
-            f"Kelembaban : {kelembaban} %\n"
-            f"Curah Hujan: {curah_hujan} mm\n"
-            f"Harap waspada dan pantau kondisi sekitar."
-        )
+        # Buat pesan notifikasi berdasarkan status klasifikasi
+        from datetime import datetime
+        waktu_sekarang = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        
+        status_lower = status_air.lower()
+        
+        if status_lower in ['waspada', 'siaga', 'sedang']:
+            # Format pesan untuk status WASPADA
+            pesan = (
+                f"⚠️ *WASPADA BANJIR*\n\n"
+                f"Tinggi Air: {tinggi_air} cm\n"
+                f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
+                f"Curah Hujan: {curah_hujan}mm\n"
+                f"Waktu: {waktu_sekarang}\n\n"
+                f"Harap tingkatkan kewaspadaan!"
+            )
+        elif status_lower in ['bahaya', 'tinggi']:
+            # Format pesan untuk status BAHAYA
+            pesan = (
+                f"🚨 *BAHAYA BANJIR*\n\n"
+                f"Status: BAHAYA\n"
+                f"Tinggi Air: {tinggi_air} cm\n"
+                f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
+                f"Curah Hujan: {curah_hujan}mm\n"
+                f"Waktu: {waktu_sekarang}\n\n"
+                f"SEGERA LAKUKAN EVAKUASI!"
+            )
+        else:
+            # Format pesan untuk status NORMAL
+            pesan = (
+                f"✅ *STATUS NORMAL*\n\n"
+                f"Kondisi air telah kembali normal.\n"
+                f"Tinggi Air: {tinggi_air} cm\n"
+                f"Waktu: {waktu_sekarang}\n\n"
+                f"Sistem terus memantau."
+            )
 
         # Kirim WhatsApp hanya jika sesuai dengan aturan bisnis
         terkirim = False
