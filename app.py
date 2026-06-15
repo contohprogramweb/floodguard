@@ -24,8 +24,10 @@ FONNTE_TOKEN = os.environ.get('FONNTE_TOKEN', 'ISI_TOKEN_FONNTE_ANDA')
 
 
 def kirim_whatsapp(nomor, pesan):
-    """Mengirim pesan WhatsApp melalui Fonnte API"""
+    """Mengirim pesan WhatsApp melalui Fonnte API ke satu atau lebih nomor (dipisahkan koma)"""
     try:
+        # Jika nomor adalah string dengan beberapa nomor terpisah koma, biarkan seperti itu
+        # Fonnte API mendukung multiple targets dengan format: "6281234567890,6289876543210"
         response = http_requests.post(
             'https://api.fonnte.com/send',
             headers={'Authorization': FONNTE_TOKEN},
