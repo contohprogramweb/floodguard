@@ -445,7 +445,7 @@ def create_app():
                 if 'normal' in status or 'aman' in status:
                     normal_count = 1
                 elif 'waspada' in status or 'siaga' in status or 'sedang' in status:
-                    waspada_count = 1
+                    waspada_count = 1 
                 elif 'bahaya' in status or 'tinggi' in status:
                     bahaya_count = 1
                 
@@ -592,11 +592,11 @@ def create_app():
 
         # Buat pesan notifikasi
         pesan = (
-            f"🌊 *NOTIFIKASI BANJIR*\n"
+            f"ðŸŒŠ *NOTIFIKASI BANJIR*\n"
             f"Halo {nama_pemilik},\n"
             f"Status: *{status_air}* ({probabilitas}%)\n"
             f"Tinggi Air : {tinggi_air} cm\n"
-            f"Suhu       : {suhu} °C\n"
+            f"Suhu       : {suhu} Â°C\n"
             f"Kelembaban : {kelembaban} %\n"
             f"Curah Hujan: {curah_hujan} mm\n"
             f"Harap waspada dan pantau kondisi sekitar."
@@ -622,7 +622,6 @@ def create_app():
         }), 201
 
     return app
-
 
 
 # Untuk WSGI (production)
