@@ -79,6 +79,64 @@ def should_send_notification(current_status: str, last_status: Optional[str]) ->
     return True, "Status tidak dikenali"
 
 
+def format_whatsapp_message(status_air, nama_pemilik, tinggi_air, suhu, kelembaban, curah_hujan, intensitas_hujan):
+    """Membuat format pesan WhatsApp yang berbeda untuk setiap status klasifikasi"""
+    from datetime import datetime
+    
+    waktu_sekarang = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    status_upper = status_air.upper()
+    
+    if status_upper in ['BAHAYA', 'TINGGI']:
+        # Format pesan untuk status BAHAYA
+        pesan = (
+            f"!!! BAHAYA BANJIR !!!\n"
+            f"Status: BAHAYA\n"
+            f"Tinggi Air: {tinggi_air} cm\n"
+            f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
+            f"Intensitas Hujan: [{intensitas_hujan}]\n"
+            f"Waktu: {waktu_sekarang}\n"
+            f"SEGERA LAKUKAN EVAKUASI!"
+        )
+    elif status_upper in ['WASPADA', 'SIAGA', 'SEDANG']:
+        # Format pesan untuk status WASPADA
+        pesan = (
+            f"/!\\ PERINGATAN BANJIR /!\\\n"
+            f"Status: WASPADA\n"
+            f"Tinggi Air: {tinggi_air} cm\n"
+            f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
+            f"Intensitas Hujan: [{intensitas_hujan}]\n"
+            f"Waktu: {waktu_sekarang}\n"
+            f"Harap tingkatkan kewaspadaan!"
+        )
+    else:
+        # Format pesan untuk status NORMAL (Kembali Normal)
+        pesan = (
+            f"[OK] STATUS NORMAL\n"
+            f"Kondisi air telah kembali normal.\n"
+            f"Tinggi Air: {tinggi_air} cm\n"
+            f"Waktu: {waktu_sekarang}\n"
+            f"Sistem terus memantau."
+        )
+    
+    return pesan
+
+
+def get_intensitas_hujan(curah_hujan):
+    """Mengategorikan intensitas hujan berdasarkan curah hujan (mm)"""
+    try:
+        curah = float(curah_hujan)
+        if curah <= 20:
+            return "Ringan"
+        elif curah <= 50:
+            return "Sedang"
+        elif curah <= 100:
+            return "Lebat"
+        else:
+            return "Sangat Lebat"
+    except (ValueError, TypeError):
+        return "Tidak Diketahui"
+
+
 def kirim_whatsapp(nomor, pesan):
     """Mengirim pesan WhatsApp melalui Fonnte API ke satu atau lebih nomor (dipisahkan koma)"""
     try:
@@ -656,17 +714,11 @@ def create_app():
 
         print(f"[Notifikasi] Status saat ini: {status_air}, Status terakhir: {last_status}, Kirim: {should_send}, Alasan: {reason}")
 
-        # Buat pesan notifikasi
-        pesan = (
-            f"🌊 *NOTIFIKASI BANJIR*\n"
-            f"Halo {nama_pemilik},\n"
-            f"Status: *{status_air}* ({probabilitas}%)\n"
-            f"Tinggi Air : {tinggi_air} cm\n"
-            f"Suhu       : {suhu} °C\n"
-            f"Kelembaban : {kelembaban} %\n"
-            f"Curah Hujan: {curah_hujan} mm\n"
-            f"Harap waspada dan pantau kondisi sekitar."
-        )
+        # Dapatkan intensitas hujan untuk format pesan
+        intensitas_hujan = get_intensitas_hujan(curah_hujan)
+
+        # Buat pesan notifikasi dengan format yang berbeda sesuai status
+        pesan = format_whatsapp_message(status_air, nama_pemilik, tinggi_air, suhu, kelembaban, curah_hujan, intensitas_hujan)
 
         # Kirim WhatsApp hanya jika sesuai dengan aturan bisnis
         terkirim = False
