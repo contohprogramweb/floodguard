@@ -8,6 +8,7 @@ import numpy as np
 import joblib
 import requests as http_requests
 import os
+from typing import Optional, Tuple
 
 # Load model klasifikasi
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +22,61 @@ except Exception as e:
     flood_model = None
 
 FONNTE_TOKEN = os.environ.get('FONNTE_TOKEN', 'ISI_TOKEN_FONNTE_ANDA')
+
+
+def get_last_status(id_sensorbox: int) -> Optional[str]:
+    """Mengambil status terakhir dari sensor box tertentu"""
+    from database import get_db_connection
+    conn = get_db_connection()
+    if conn is None:
+        return None
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT hk.status_air
+            FROM hasil_klasifikasi hk
+            JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
+            WHERE ds.id_sensorbox = %s
+            ORDER BY ds.waktu DESC, hk.id_hasil_klasifikasi DESC
+            LIMIT 1
+        """, (id_sensorbox,))
+        result = cursor.fetchone()
+        return result['status_air'] if result else None
+    finally:
+        conn.close()
+
+
+def should_send_notification(current_status: str, last_status: Optional[str]) -> Tuple[bool, str]:
+    """
+    Menentukan apakah notifikasi harus dikirim berdasarkan aturan bisnis:
+    - Bahaya: selalu dikirim setiap kali terdeteksi
+    - Waspada: dikirim hanya saat perubahan status ke Waspada (dari status lain)
+    - Normal: dikirim hanya saat perubahan dari Waspada atau Bahaya ke Normal
+    
+    Returns: (should_send, reason)
+    """
+    current_lower = current_status.lower()
+    last_lower = last_status.lower() if last_status else None
+    
+    # Aturan 1: Notifikasi Bahaya wajib dikirim setiap kali terdeteksi
+    if current_lower in ['bahaya', 'tinggi']:
+        return True, "Status Bahaya terdeteksi"
+    
+    # Aturan 2: Notifikasi Waspada dikirim sekali saat perubahan ke Waspada
+    if current_lower in ['waspada', 'siaga', 'sedang']:
+        if last_lower is None or last_lower not in ['waspada', 'siaga', 'sedang']:
+            return True, "Perubahan status ke Waspada"
+        return False, "Status masih Waspada (tidak perlu notif ulang)"
+    
+    # Aturan 3: Notifikasi Normal dikirim hanya saat perubahan dari Waspada/Bahaya ke Normal
+    if current_lower in ['normal', 'aman']:
+        if last_lower in ['waspada', 'siaga', 'sedang', 'bahaya', 'tinggi']:
+            return True, f"Perubahan status dari {last_status} ke Normal"
+        return False, "Status masih Normal (tidak perlu notif)"
+    
+    # Default: kirim untuk status yang tidak dikenali
+    return True, "Status tidak dikenali"
 
 
 def kirim_whatsapp(nomor, pesan):
@@ -588,30 +644,41 @@ def create_app():
 
         # Klasifikasi status banjir
         status_air, probabilitas = klasifikasi_status(tinggi_air, suhu, kelembaban, curah_hujan)
-        
+
         # Simpan hasil klasifikasi
         id_hasil = HasilKlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
 
+        # Ambil status terakhir dari sensor box ini untuk menentukan apakah notifikasi perlu dikirim
+        last_status = get_last_status(id_sensorbox)
+
+        # Tentukan apakah notifikasi harus dikirim berdasarkan aturan bisnis
+        should_send, reason = should_send_notification(status_air, last_status)
+
+        print(f"[Notifikasi] Status saat ini: {status_air}, Status terakhir: {last_status}, Kirim: {should_send}, Alasan: {reason}")
+
         # Buat pesan notifikasi
         pesan = (
-            f"ðŸŒŠ *NOTIFIKASI BANJIR*\n"
+            f"🌊 *NOTIFIKASI BANJIR*\n"
             f"Halo {nama_pemilik},\n"
             f"Status: *{status_air}* ({probabilitas}%)\n"
             f"Tinggi Air : {tinggi_air} cm\n"
-            f"Suhu       : {suhu} Â°C\n"
+            f"Suhu       : {suhu} °C\n"
             f"Kelembaban : {kelembaban} %\n"
             f"Curah Hujan: {curah_hujan} mm\n"
             f"Harap waspada dan pantau kondisi sekitar."
         )
 
-        # Kirim WhatsApp hanya jika status tidak normal/aman
+        # Kirim WhatsApp hanya jika sesuai dengan aturan bisnis
         terkirim = False
-        if status_air.lower() not in ['normal', 'aman']:
+        if should_send:
             terkirim = kirim_whatsapp(nomor_whatsapp, pesan)
+            print(f"[WhatsApp] Notifikasi {'berhasil' if terkirim else 'gagal'} dikirim ke {nomor_whatsapp}")
+        else:
+            print(f"[WhatsApp] Notifikasi tidak dikirim: {reason}")
 
-        # Simpan notifikasi ke database
+        # Simpan notifikasi ke database (tetap simpan untuk logging, terlepas dari apakah dikirim atau tidak)
         NotifikasiModel.insert(id_hasil, pesan)
-
+        
         return jsonify({
             'status': 'success',
             'data': {
