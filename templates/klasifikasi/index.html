@@ -169,7 +169,7 @@
 <script>
 const labels = {{ chart_labels|safe }};
 const dataNormal = {{ chart_normal|safe }};
-const dataSiaga = {{ chart_siaga|safe }};
+const dataWaspada = {{ chart_waspada|safe }};
 const dataBahaya = {{ chart_bahaya|safe }};
 const isMobile = window.innerWidth < 600;
 
@@ -188,8 +188,8 @@ new Chart(ctx, {
         fill: true
       },
       { 
-        label: 'Siaga', 
-        data: dataSiaga, 
+        label: 'Waspada', 
+        data: dataWaspada, 
         borderColor: '#f59e0b', 
         backgroundColor: 'rgba(245,158,11,0.1)',
         tension: 0.3,

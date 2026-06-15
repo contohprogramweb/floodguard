@@ -366,7 +366,7 @@ def create_app():
         conn = get_db_connection()
         if conn is None:
             flash('Gagal terhubung ke database.', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_siaga=[], chart_bahaya=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_waspada=[], chart_bahaya=[])
 
         try:
             cursor = conn.cursor(dictionary=True)
@@ -433,24 +433,24 @@ def create_app():
             
             # Count status per data point for the chart
             chart_normal = []
-            chart_siaga = []
+            chart_waspada = []
             chart_bahaya = []
             
             for row in chart_data:
                 status = row['status_air'].lower() if row['status_air'] else ''
                 normal_count = 0
-                siaga_count = 0
+                waspada_count = 0
                 bahaya_count = 0
                 
                 if 'normal' in status or 'aman' in status:
                     normal_count = 1
-                elif 'siaga' in status or 'waspada' in status or 'sedang' in status:
-                    siaga_count = 1
+                elif 'waspada' in status or 'siaga' in status or 'sedang' in status:
+                    waspada_count = 1
                 elif 'bahaya' in status or 'tinggi' in status:
                     bahaya_count = 1
                 
                 chart_normal.append(normal_count)
-                chart_siaga.append(siaga_count)
+                chart_waspada.append(waspada_count)
                 chart_bahaya.append(bahaya_count)
 
             return render_template('klasifikasi/index.html',
@@ -462,11 +462,11 @@ def create_app():
                                    tahun=tahun,
                                    chart_labels=chart_labels,
                                    chart_normal=chart_normal,
-                                   chart_siaga=chart_siaga,
+                                   chart_waspada=chart_waspada,
                                    chart_bahaya=chart_bahaya)
         except Exception as e:
             flash(f'Gagal mengambil data klasifikasi: {str(e)}', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_siaga=[], chart_bahaya=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_waspada=[], chart_bahaya=[])
         finally:
             if conn:
                 conn.close()
