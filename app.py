@@ -606,7 +606,7 @@ def create_app():
                 conn.close()
 
     # ==================== ROUTE API SENSOR ====================
-    @app.route('/api/sensor', methods=['POST'])
+    @app.route('/api/sensor-data', methods=['POST'])
     def receive_sensor_data():
         """API endpoint untuk menerima data sensor dari IoT device"""
         if request.is_json:
