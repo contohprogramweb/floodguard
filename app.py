@@ -89,7 +89,7 @@ def format_whatsapp_message(status_air, nama_pemilik, tinggi_air, suhu, kelembab
     if status_upper in ['BAHAYA', 'TINGGI']:
         # Format pesan untuk status BAHAYA
         pesan = (
-            f"!!! BAHAYA BANJIR !!!\n"
+            f"BAHAYA BANJIR\n"
             f"Status: BAHAYA\n"
             f"Tinggi Air: {tinggi_air} cm\n"
             f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
@@ -100,8 +100,7 @@ def format_whatsapp_message(status_air, nama_pemilik, tinggi_air, suhu, kelembab
     elif status_upper in ['WASPADA', 'SIAGA', 'SEDANG']:
         # Format pesan untuk status WASPADA
         pesan = (
-            f"/!\\ PERINGATAN BANJIR /!\\\n"
-            f"Status: WASPADA\n"
+            f"WASPADA BANJIR\n"
             f"Tinggi Air: {tinggi_air} cm\n"
             f"Suhu: {suhu}°C | Kelembaban: {kelembaban}%\n"
             f"Intensitas Hujan: [{intensitas_hujan}]\n"
@@ -111,7 +110,7 @@ def format_whatsapp_message(status_air, nama_pemilik, tinggi_air, suhu, kelembab
     else:
         # Format pesan untuk status NORMAL (Kembali Normal)
         pesan = (
-            f"[OK] STATUS NORMAL\n"
+            f"STATUS NORMAL\n"
             f"Kondisi air telah kembali normal.\n"
             f"Tinggi Air: {tinggi_air} cm\n"
             f"Waktu: {waktu_sekarang}\n"
