@@ -164,14 +164,14 @@ const dataHujan  = {{ chart_hujan|safe }};
 const isMobile = window.innerWidth < 600;
 const ctx = document.getElementById('sensorChart').getContext('2d');
 new Chart(ctx, {
-  type: 'bar',
+  type: 'line',
   data: {
     labels,
     datasets: [
-      { label:'Tinggi Air (cm)', data:dataTinggi, backgroundColor:'#00d4ff', borderColor:'#00d4ff', borderWidth:1 },
-      { label:'Suhu (°C)',       data:dataSuhu,   backgroundColor:'#f59e0b', borderColor:'#f59e0b', borderWidth:1 },
-      { label:'Kelembaban (%)',  data:dataKelembaban, backgroundColor:'#10b981', borderColor:'#10b981', borderWidth:1 },
-      { label:'Curah Hujan (mm)',data:dataHujan,  backgroundColor:'#6366f1', borderColor:'#6366f1', borderWidth:1 },
+      { label:'Tinggi Air (cm)', data:dataTinggi, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.1)', borderWidth:2, tension:0.3, fill:false },
+      { label:'Suhu (°C)',       data:dataSuhu,   borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)', borderWidth:2, tension:0.3, fill:false },
+      { label:'Kelembaban (%)',  data:dataKelembaban, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', borderWidth:2, tension:0.3, fill:false },
+      { label:'Curah Hujan (mm)',data:dataHujan,  borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.1)', borderWidth:2, tension:0.3, fill:false },
     ]
   },
   options: {
@@ -196,8 +196,8 @@ new Chart(ctx, {
       }
     },
     scales:{
-      x:{ stacked:true, grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
-      y:{ stacked:true, grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
+      x:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
+      y:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
     }
   }
 });
