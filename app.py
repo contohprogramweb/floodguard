@@ -6,7 +6,7 @@ from functools import wraps  # tambahkan ini
 from database import init_connection_pool
 import numpy as np
 import joblib
-import requests as http_requests
+import subprocess
 import os
 from typing import Optional, Tuple
 
@@ -80,21 +80,20 @@ def should_send_notification(current_status: str, last_status: Optional[str]) ->
 
 
 def kirim_whatsapp(nomor, pesan):
-    """Mengirim pesan WhatsApp melalui Fonnte API ke satu atau lebih nomor (dipisahkan koma)"""
+    """Mengirim pesan WhatsApp melalui Fonnte API menggunakan curl"""
     try:
-        # Jika nomor adalah string dengan beberapa nomor terpisah koma, biarkan seperti itu
-        # Fonnte API mendukung multiple targets dengan format: "6281234567890,6289876543210"
-        response = http_requests.post(
+        # Gunakan curl untuk mengirim pesan ke Fonnte API
+        cmd = [
+            'curl', '-X', 'POST',
             'https://api.fonnte.com/send',
-            headers={'Authorization': 'zA76a357fxvFxAzbg9yY'},
-            data={
-                'target': nomor,
-                'message': pesan,
-                'countryCode': '62'
-            },
-            timeout=10
-        )
-        return response.status_code == 200
+            '-H', 'Authorization: zA76a357fxvFxAzbg9yY',
+            '-d', f'target={nomor}',
+            '-d', f'message={pesan}',
+            '-d', 'countryCode=62'
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        # Cek apakah response mengandung status sukses
+        return result.returncode == 0 and ('success' in result.stdout.lower() or 'sent' in result.stdout.lower())
     except Exception as e:
         print(f"[WhatsApp] Gagal kirim pesan: {e}")
         return False
