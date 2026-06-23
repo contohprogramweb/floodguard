@@ -168,9 +168,7 @@
 {% block extra_js %}
 <script>
 const labels = {{ chart_labels|safe }};
-const dataNormal = {{ chart_normal|safe }};
-const dataWaspada = {{ chart_waspada|safe }};
-const dataBahaya = {{ chart_bahaya|safe }};
+const dataValues = {{ chart_values|safe }};
 const isMobile = window.innerWidth < 600;
 
 const ctx = document.getElementById('klasChart').getContext('2d');
@@ -180,28 +178,13 @@ new Chart(ctx, {
     labels,
     datasets: [
       { 
-        label: 'Normal', 
-        data: dataNormal, 
-        borderColor: '#10b981', 
-        backgroundColor: 'rgba(16,185,129,0.1)',
+        label: 'Status Air', 
+        data: dataValues, 
+        borderColor: '#3b82f6', 
+        backgroundColor: 'rgba(59,130,246,0.1)',
         tension: 0.3,
-        fill: true
-      },
-      { 
-        label: 'Waspada',
-        data: dataWaspada,
-        borderColor: '#f59e0b', 
-        backgroundColor: 'rgba(245,158,11,0.1)',
-        tension: 0.3,
-        fill: true
-      },
-      { 
-        label: 'Bahaya', 
-        data: dataBahaya, 
-        borderColor: '#ef4444', 
-        backgroundColor: 'rgba(239,68,68,0.1)',
-        tension: 0.3,
-        fill: true
+        fill: true,
+        stepped: false
       }
     ]
   },
@@ -209,10 +192,25 @@ new Chart(ctx, {
     responsive: true, maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom',
-        labels: { color:'#94a3b8', font:{family:'Space Grotesk', size: isMobile ? 10 : 12}, padding: isMobile ? 8 : 14, boxWidth:12 }
+        display: false
       },
-      tooltip: { backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
+      tooltip: { 
+        backgroundColor:'#1a2235', 
+        borderColor:'#1e2d45', 
+        borderWidth:1, 
+        titleColor:'#e2e8f0', 
+        bodyColor:'#94a3b8',
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed.y;
+            let status = '';
+            if (value === 1) status = 'Aman';
+            else if (value === 2) status = 'Waspada';
+            else if (value === 3) status = 'Bahaya';
+            return 'Status: ' + status;
+          }
+        }
+      }
     },
     scales: {
       x: { 
@@ -220,8 +218,18 @@ new Chart(ctx, {
         grid: { color: 'rgba(30,45,69,0.5)' }
       },
       y: { 
-        beginAtZero: true,
-        ticks: { color: '#94a3b8', font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 } },
+        min: 0.5,
+        max: 3.5,
+        ticks: { 
+          color: '#94a3b8', 
+          font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 },
+          callback: function(value) {
+            if (value === 1) return 'Aman';
+            if (value === 2) return 'Waspada';
+            if (value === 3) return 'Bahaya';
+            return '';
+          }
+        },
         grid: { color: 'rgba(30,45,69,0.5)' }
       }
     }
