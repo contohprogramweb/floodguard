@@ -167,14 +167,14 @@ const dataHujan  = {{ chart_hujan|safe }};
 const isMobile = window.innerWidth < 600;
 const ctx = document.getElementById('sensorChart').getContext('2d');
 new Chart(ctx, {
-  type: 'line',
+  type: 'bar',
   data: {
     labels,
     datasets: [
-      { label:'Tinggi Air (cm)', data:dataTinggi, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
-      { label:'Suhu (°C)',       data:dataSuhu,   borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
-      { label:'Kelembaban (%)',  data:dataKelembaban, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
-      { label:'Curah Hujan (mm)',data:dataHujan,  borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Tinggi Air (cm)', data:dataTinggi, backgroundColor:'#00d4ff', borderColor:'#00d4ff', borderWidth:1 },
+      { label:'Suhu (°C)',       data:dataSuhu,   backgroundColor:'#f59e0b', borderColor:'#f59e0b', borderWidth:1 },
+      { label:'Kelembaban (%)',  data:dataKelembaban, backgroundColor:'#10b981', borderColor:'#10b981', borderWidth:1 },
+      { label:'Curah Hujan (mm)',data:dataHujan,  backgroundColor:'#6366f1', borderColor:'#6366f1', borderWidth:1 },
     ]
   },
   options: {
@@ -188,8 +188,8 @@ new Chart(ctx, {
       tooltip:{ backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
     },
     scales:{
-      x:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
-      y:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
+      x:{ stacked:true, grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
+      y:{ stacked:true, grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
     }
   }
 });
