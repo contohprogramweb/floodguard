@@ -663,16 +663,17 @@ def create_app():
         # Klasifikasi status banjir
         status_air, probabilitas = klasifikasi_status(tinggi_air, suhu, kelembaban, curah_hujan)
 
-        # Simpan hasil klasifikasi
-        id_hasil = HasilKlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
-
-        # Ambil status terakhir dari sensor box ini untuk menentukan apakah notifikasi perlu dikirim
+        # Ambil status terakhir dari sensor box ini SEBELUM menyimpan hasil klasifikasi baru
+        # Ini penting untuk membandingkan status sebelumnya dengan status saat ini
         last_status = get_last_status(id_sensorbox)
 
         # Tentukan apakah notifikasi harus dikirim berdasarkan aturan bisnis
         should_send, reason = should_send_notification(status_air, last_status)
 
         print(f"[Notifikasi] Status saat ini: {status_air}, Status terakhir: {last_status}, Kirim: {should_send}, Alasan: {reason}")
+
+        # Simpan hasil klasifikasi ke database SETELAH mengambil status terakhir
+        id_hasil = HasilKlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
 
         # Buat pesan notifikasi berdasarkan status klasifikasi
         from datetime import datetime
