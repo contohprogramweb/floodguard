@@ -424,7 +424,7 @@ def create_app():
         conn = get_db_connection()
         if conn is None:
             flash('Gagal terhubung ke database.', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_waspada=[], chart_bahaya=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
 
         try:
             cursor = conn.cursor(dictionary=True)
@@ -489,27 +489,22 @@ def create_app():
             # Prepare chart labels and data - individual classification items
             chart_labels = [row['waktu'].strftime('%d/%m %H:%M') if row['waktu'] else '' for row in chart_data]
             
-            # Count status per data point for the chart
-            chart_normal = []
-            chart_waspada = []
-            chart_bahaya = []
+            # Convert status to numeric values for line chart
+            # Aman/Normal = 1, Waspada = 2, Bahaya = 3
+            chart_values = []
             
             for row in chart_data:
                 status = row['status_air'].lower() if row['status_air'] else ''
-                normal_count = 0
-                waspada_count = 0
-                bahaya_count = 0
+                value = 1  # default to aman
                 
-                if 'normal' in status or 'aman' in status:
-                    normal_count = 1
+                if 'bahaya' in status or 'tinggi' in status:
+                    value = 3
                 elif 'waspada' in status or 'siaga' in status or 'sedang' in status:
-                    waspada_count = 1 
-                elif 'bahaya' in status or 'tinggi' in status:
-                    bahaya_count = 1
+                    value = 2
+                elif 'normal' in status or 'aman' in status:
+                    value = 1
                 
-                chart_normal.append(normal_count)
-                chart_waspada.append(waspada_count)
-                chart_bahaya.append(bahaya_count)
+                chart_values.append(value)
 
             return render_template('klasifikasi/index.html',
                                    data=data,
@@ -519,12 +514,10 @@ def create_app():
                                    bulan=bulan,
                                    tahun=tahun,
                                    chart_labels=chart_labels,
-                                   chart_normal=chart_normal,
-                                   chart_waspada=chart_waspada,
-                                   chart_bahaya=chart_bahaya)
+                                   chart_values=chart_values)
         except Exception as e:
             flash(f'Gagal mengambil data klasifikasi: {str(e)}', 'danger')
-            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_normal=[], chart_waspada=[], chart_bahaya=[])
+            return render_template('klasifikasi/index.html', data=[], total=0, total_pages=0, page=page, bulan=bulan, tahun=tahun, chart_labels=[], chart_values=[])
         finally:
             if conn:
                 conn.close()
