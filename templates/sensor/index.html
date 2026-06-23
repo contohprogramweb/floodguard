@@ -107,10 +107,7 @@
               {{ row.waktu.strftime('%d/%m/%Y %H:%M') if row.waktu else row.waktu }}
             </td>
             <td data-label="Tinggi Air">
-              <span style="font-weight:600;color:
-                {% if row.tinggi_air|float > 200 %}var(--danger)
-                {% elif row.tinggi_air|float > 100 %}var(--warning)
-                {% else %}var(--success){% endif %};">
+              <span style="font-weight:600;color:var(--text);">
                 {{ row.tinggi_air }} cm
               </span>
             </td>
