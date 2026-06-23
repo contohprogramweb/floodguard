@@ -280,14 +280,14 @@ class NotifikasiModel:
 
     @staticmethod
     def insert(id_hasil_klasifikasi, pesan):
-        """Insert notifikasi baru"""
+        """Insert notifikasi baru dengan waktu_kirim otomatis"""
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO notifikasi 
-                   (id_hasil_klasifikasi, pesan)
-                   VALUES (%s, %s)""",
+                   (id_hasil_klasifikasi, pesan, waktu_kirim)
+                   VALUES (%s, %s, NOW())""",
                 (id_hasil_klasifikasi, pesan)
             )
             conn.commit()
