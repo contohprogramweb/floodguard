@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Data Sensor{% endblock %}
+{% block page_title %}Data Sensor{% endblock %}
+{% block breadcrumb %}FloodGuard / Data Sensor{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chart-container { position: relative; height: 260px; }
+  @media (max-width: 768px) { .chart-container { height: 200px; } }
+
+  /* ── Mobile card-row untuk tabel sensor ── */
+  @media (max-width: 600px) {
+    .sensor-table thead { display: none; }
+    .sensor-table tbody tr {
+      display: block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .sensor-table tbody tr:hover { background: var(--surface2); }
+    .sensor-table tbody tr:last-child td { border-bottom: 1px solid rgba(30,45,69,.5); }
+    .sensor-table td {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; border-bottom: 1px solid rgba(30,45,69,.3); font-size: 13px;
+    }
+    .sensor-table td:last-child { border-bottom: none; padding-bottom: 0; }
+    .sensor-table td::before {
+      content: attr(data-label);
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--text-muted); flex-shrink: 0;
+    }
+    .sensor-table td.td-no { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Chart -->
+<div class="card mb-6">
+  <div class="card-header">
+    <div>
+      <div class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Grafik Data Sensor</div>
+      <div class="card-subtitle">Data parameter sensor</div>
+    </div>
+  </div>
+  <div class="chart-container">
+    <canvas id="sensorChart"></canvas>
+  </div>
+</div>
+
+<!-- Filter + Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Tabel Data Sensor</div>
+      <div class="card-subtitle">Total: {{ total }} data</div>
+    </div>
+  </div>
+
+  <form method="GET" class="filter-bar">
+    <label><i class="fa-solid fa-filter"></i> Filter:</label>
+    <select name="bulan">
+       
+      {% for b in range(1,13) %}
+        <option value="{{ b }}" {% if bulan == b|string %}selected{% endif %}>
+          {{ ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][b] }}
+        </option>
+      {% endfor %}
+    </select>
+    <select name="tahun">
+      {% for y in range(2023, 2027) %}
+        <option value="{{ y }}" {% if tahun == y|string %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <div class="filter-actions">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-check"></i> Terapkan
+      </button>
+      <a href="{{ url_for('sensor') }}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </a>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="sensor-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Waktu</th>
+          <th>Tinggi Air (cm)</th>
+          <th>Suhu (°C)</th>
+          <th>Kelembaban (%)</th>
+          <th>Curah Hujan (mm)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if data %}
+          {% for row in data %}
+          <tr>
+            <td class="td-no text-muted font-mono" style="font-size:11px;" data-label="#">
+              {{ loop.index + (page-1)*10 }}
+            </td>
+            <td data-label="Waktu" style="font-family:var(--mono);font-size:12px;">
+              {{ row.waktu.strftime('%d/%m/%Y %H:%M') if row.waktu else row.waktu }}
+            </td>
+            <td data-label="Tinggi Air">
+              <span style="font-weight:600;color:
+                {% if row.tinggi_air|float > 200 %}var(--danger)
+                {% elif row.tinggi_air|float > 100 %}var(--warning)
+                {% else %}var(--success){% endif %};">
+                {{ row.tinggi_air }} cm
+              </span>
+            </td>
+            <td data-label="Suhu">{{ row.suhu }} °C</td>
+            <td data-label="Kelembaban">{{ row.kelembaban }} %</td>
+            <td data-label="Curah Hujan">{{ row.curah_hujan }} mm</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" class="empty-state">
+              <i class="fa-solid fa-database"></i>
+              <span>Belum ada data sensor</span>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    <a href="?page={{ page-1 }}&bulan={{ bulan }}&tahun={{ tahun }}"
+       class="page-btn {% if page <= 1 %}disabled{% endif %}">
+      <i class="fa-solid fa-chevron-left"></i>
+    </a>
+    {% for p in range(1, total_pages+1) %}
+      {% if p == page or p == 1 or p == total_pages or (p >= page-1 and p <= page+1) %}
+        <a href="?page={{ p }}&bulan={{ bulan }}&tahun={{ tahun }}"
+           class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+      {% elif p == page-2 or p == page+2 %}
+        <span class="page-btn" style="pointer-events:none;border:none;background:none;">…</span>
+      {% endif %}
+    {% endfor %}
+    <a href="?page={{ page+1 }}&bulan={{ bulan }}&tahun={{ tahun }}"
+       class="page-btn {% if page >= total_pages %}disabled{% endif %}">
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css2 %}{% endblock %}
+
+{% block extra_js %}
+<script>
+const labels = {{ chart_labels|safe }};
+const dataTinggi = {{ chart_tinggi|safe }};
+const dataSuhu   = {{ chart_suhu|safe }};
+const dataKelembaban = {{ chart_kelembaban|safe }};
+const dataHujan  = {{ chart_hujan|safe }};
+
+const isMobile = window.innerWidth < 600;
+const ctx = document.getElementById('sensorChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      { label:'Tinggi Air (cm)', data:dataTinggi, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Suhu (°C)',       data:dataSuhu,   borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Kelembaban (%)',  data:dataKelembaban, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+      { label:'Curah Hujan (mm)',data:dataHujan,  borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.07)', tension:.4, pointRadius: isMobile ? 2 : 3, borderWidth:2 },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    interaction: { mode: 'index', intersect: false },
+    plugins:{
+      legend:{
+        position: isMobile ? 'bottom' : 'top',
+        labels:{ color:'#94a3b8', font:{family:'Space Grotesk',size: isMobile ? 10 : 12}, boxWidth:12, padding: isMobile ? 8 : 16 }
+      },
+      tooltip:{ backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
+    },
+    scales:{
+      x:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
+      y:{ grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}} }
+    }
+  }
+});
+</script>
+{% endblock %}
