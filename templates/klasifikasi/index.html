@@ -107,10 +107,10 @@
             <td data-label="Waktu" style="font-family:var(--mono);font-size:12px;">
                {{ row.waktu.strftime('%d/%m/%Y %H:%M') if row.waktu else row.waktu }}
             </td> 
-            <td data-label="Tinggi Air">{{ row.tinggi_air }} cm</td>
-            <td data-label="Suhu">{{ row.suhu }} °C</td>
-            <td data-label="Kelembaban">{{ row.kelembaban }} %</td>
-            <td data-label="Curah Hujan">{{ row.curah_hujan }} mm</td>
+            <td data-label="Tinggi Air">{{ row.tinggi_air|int }} cm</td>
+            <td data-label="Suhu">{{ row.suhu|int }} °C</td>
+            <td data-label="Kelembaban">{{ row.kelembaban|int }} %</td>
+            <td data-label="Curah Hujan">{{ row.curah_hujan|int }} mm</td>
             <td data-label="Status">
               <span class="badge
                 {% if 'bahaya' in s or 'tinggi' in s %}badge-danger
