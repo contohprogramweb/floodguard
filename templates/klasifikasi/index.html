@@ -235,7 +235,12 @@ new Chart(ctx, {
     },
     scales: {
       x: { 
-        ticks: { color: '#94a3b8', font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 } },
+        ticks: { 
+          color: '#94a3b8', 
+          font: { family: 'Space Grotesk', size: isMobile ? 9 : 11 },
+          maxRotation: 45,
+          minRotation: 45
+        },
         grid: { color: 'rgba(30,45,69,0.5)' }
       },
       y: { 
