@@ -81,10 +81,12 @@ def should_send_notification(current_status: str, last_status: Optional[str]) ->
 
 def kirim_whatsapp(nomor, pesan):
     """Mengirim pesan WhatsApp melalui Fonnte API menggunakan curl"""
+    import json
+    
     try:
         # Gunakan curl untuk mengirim pesan ke Fonnte API
         cmd = [
-            'curl', '-X', 'POST',
+            'curl', '-s', '-X', 'POST',
             'https://api.fonnte.com/send',
             '-H', 'Authorization: zA76a357fxvFxAzbg9yY',
             '-d', f'target={nomor}',
@@ -92,10 +94,30 @@ def kirim_whatsapp(nomor, pesan):
             '-d', 'countryCode=62'
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        # Cek apakah response mengandung status sukses
-        return result.returncode == 0 and ('success' in result.stdout.lower() or 'sent' in result.stdout.lower())
+        
+        # Parse response JSON dari Fonnte
+        try:
+            response_data = json.loads(result.stdout)
+            status = response_data.get('status', False)
+            reason = response_data.get('reason', 'Unknown')
+            
+            print(f"[Fonnte] Response: {response_data}")
+            
+            # Cek status dari response JSON
+            if status is True:
+                return True
+            else:
+                print(f"[Fonnte] Gagal: {reason}")
+                return False
+        except json.JSONDecodeError as e:
+            print(f"[Fonnte] Error parsing JSON: {e}, raw response: {result.stdout}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print("[Fonnte] Request timeout")
+        return False
     except Exception as e:
-        print(f"[WhatsApp] Gagal kirim pesan: {e}")
+        print(f"[Fonnte] Error: {e}")
         return False
 
 
