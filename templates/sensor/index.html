@@ -101,7 +101,7 @@
           {% for row in data %}
           <tr>
             <td class="td-no text-muted font-mono" style="font-size:11px;" data-label="#">
-              {{ loop.index + (page-1)*10 }}
+              {{ loop.index + (page-1)*15 }}
             </td>
             <td data-label="Waktu" style="font-family:var(--mono);font-size:12px;">
               {{ row.waktu.strftime('%d/%m/%Y %H:%M') if row.waktu else row.waktu }}

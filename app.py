@@ -345,7 +345,7 @@ def create_app():
             count_sql = f"SELECT COUNT(*) as cnt FROM data_sensor ds {where_clause}"
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['cnt']
-            per_page = 20
+            per_page = 15
             total_pages = (total + per_page - 1) // per_page
             
             # Get paginated data
@@ -360,7 +360,7 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
             
-            # Get chart data - individual sensor readings (not daily averages)
+            # Get chart data - limited to 15 records to match table
             chart_sql = f"""
                 SELECT ds.waktu,
                        ds.tinggi_air,
@@ -369,7 +369,8 @@ def create_app():
                        ds.curah_hujan
                 FROM data_sensor ds
                 {where_clause}
-                ORDER BY ds.waktu ASC
+                ORDER BY ds.waktu DESC
+                LIMIT %s
             """
             # Reset params for chart query (hanya id_sb, bulan, tahun)
             chart_params = [id_sb]
@@ -377,6 +378,7 @@ def create_app():
                 chart_params.append(int(bulan))
             if tahun:
                 chart_params.append(int(tahun))
+            chart_params.append(per_page)
             cursor.execute(chart_sql, chart_params)
             chart_data = cursor.fetchall()
             
