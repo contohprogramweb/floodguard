@@ -190,7 +190,7 @@ new Chart(ctx, {
         bodyColor:'#94a3b8',
         callbacks: {
           label: function(context) {
-            return context.dataset.label + ': ' + Math.round(context.parsed.y);
+            return context.dataset.label + ': ' + parseInt(context.parsed.y);
           }
         }
       }
