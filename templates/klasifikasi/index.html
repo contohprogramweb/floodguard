@@ -171,18 +171,22 @@ const labels = {{ chart_labels|safe }};
 const dataValues = {{ chart_values|safe }};
 const isMobile = window.innerWidth < 600;
 
+// Reverse the data for display (newest first in table, but oldest first in chart)
+const reversedLabels = [...labels].reverse();
+const reversedData = [...dataValues].reverse();
+
 const ctx = document.getElementById('klasChart').getContext('2d');
 new Chart(ctx, {
   type: 'line',
   data: {
-    labels,
+    labels: reversedLabels,
     datasets: [
       { 
         label: 'Status Air', 
-        data: dataValues, 
+        data: reversedData, 
         borderColor: '#3b82f6', 
         backgroundColor: 'rgba(59,130,246,0.1)',
-        tension: 0.3,
+        tension: 0,
         fill: true,
         stepped: false,
         pointBackgroundColor: function(context) {
