@@ -103,7 +103,7 @@
           {% for row in data %}
           {% set s = row.status_air|lower %}
           <tr>
-            <td class="td-no text-muted" style="font-size:11px;" data-label="#">{{ loop.index + (page-1)*20 }}</td>
+            <td class="td-no text-muted" style="font-size:11px;" data-label="#">{{ loop.index + (page-1)*15 }}</td>
             <td data-label="Waktu" style="font-family:var(--mono);font-size:12px;">
                {{ row.waktu.strftime('%d/%m/%Y %H:%M') if row.waktu else row.waktu }}
             </td> 
@@ -184,7 +184,24 @@ new Chart(ctx, {
         backgroundColor: 'rgba(59,130,246,0.1)',
         tension: 0.3,
         fill: true,
-        stepped: false
+        stepped: false,
+        pointBackgroundColor: function(context) {
+          const value = context.raw;
+          if (value === 1) return '#22c55e'; // hijau untuk aman
+          if (value === 2) return '#f97316'; // orange untuk waspada
+          if (value === 3) return '#ef4444'; // merah untuk bahaya
+          return '#3b82f6';
+        },
+        pointBorderColor: function(context) {
+          const value = context.raw;
+          if (value === 1) return '#22c55e';
+          if (value === 2) return '#f97316';
+          if (value === 3) return '#ef4444';
+          return '#3b82f6';
+        },
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBorderWidth: 2
       }
     ]
   },

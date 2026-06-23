@@ -449,7 +449,7 @@ def create_app():
             """
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['cnt']
-            per_page = 20
+            per_page = 15
             total_pages = (total + per_page - 1) // per_page
             
             # Get paginated data
@@ -466,8 +466,8 @@ def create_app():
             cursor.execute(data_sql, params)
             data = cursor.fetchall()
             
-            # Get chart data - Individual classification data (not daily averages)
-            # Data follows what's displayed in the table (filtered by month/year)
+            # Get chart data - Match the table data (paginated, 15 items)
+            # Use same pagination parameters as table
             chart_sql = f"""
                 SELECT ds.waktu,
                        hk.status_air,
@@ -475,14 +475,16 @@ def create_app():
                 FROM hasil_klasifikasi hk
                 JOIN data_sensor ds ON hk.id_data_sensor = ds.id_data_sensor
                 {where_clause}
-                ORDER BY ds.waktu ASC, hk.id_hasil_klasifikasi ASC
+                ORDER BY ds.waktu DESC, hk.id_hasil_klasifikasi DESC
+                LIMIT %s OFFSET %s
             """
-            # Reset params for chart query (hanya id_sb, bulan, tahun)
+            # Reset params for chart query (id_sb, bulan, tahun, per_page, offset)
             chart_params = [id_sb]
             if bulan:
                 chart_params.append(int(bulan))
             if tahun:
                 chart_params.append(int(tahun))
+            chart_params.extend([per_page, offset])
             cursor.execute(chart_sql, chart_params)
             chart_data = cursor.fetchall()
             
