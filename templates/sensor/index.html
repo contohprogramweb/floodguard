@@ -108,12 +108,12 @@
             </td>
             <td data-label="Tinggi Air">
               <span style="font-weight:600;color:var(--text);">
-                {{ row.tinggi_air }} cm
+                {{ row.tinggi_air|int }} cm
               </span>
             </td>
-            <td data-label="Suhu">{{ row.suhu }} °C</td>
-            <td data-label="Kelembaban">{{ row.kelembaban }} %</td>
-            <td data-label="Curah Hujan">{{ row.curah_hujan }} mm</td>
+            <td data-label="Suhu">{{ row.suhu|int }} °C</td>
+            <td data-label="Kelembaban">{{ row.kelembaban|int }} %</td>
+            <td data-label="Curah Hujan">{{ row.curah_hujan|int }} mm</td>
           </tr>
           {% endfor %}
         {% else %}
@@ -182,7 +182,18 @@ new Chart(ctx, {
         position: isMobile ? 'bottom' : 'top',
         labels:{ color:'#94a3b8', font:{family:'Space Grotesk',size: isMobile ? 10 : 12}, boxWidth:12, padding: isMobile ? 8 : 16 }
       },
-      tooltip:{ backgroundColor:'#1a2235', borderColor:'#1e2d45', borderWidth:1, titleColor:'#e2e8f0', bodyColor:'#94a3b8' }
+      tooltip:{ 
+        backgroundColor:'#1a2235', 
+        borderColor:'#1e2d45', 
+        borderWidth:1, 
+        titleColor:'#e2e8f0', 
+        bodyColor:'#94a3b8',
+        callbacks: {
+          label: function(context) {
+            return context.dataset.label + ': ' + Math.round(context.parsed.y);
+          }
+        }
+      }
     },
     scales:{
       x:{ stacked:true, grid:{color:'rgba(30,45,69,.5)'}, ticks:{color:'#64748b', font:{size: isMobile ? 9 : 11}, maxRotation:45} },
