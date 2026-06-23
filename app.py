@@ -698,8 +698,12 @@ def create_app():
         else:
             print(f"[WhatsApp] Notifikasi tidak dikirim: {reason}")
 
-        # Simpan notifikasi ke database (tetap simpan untuk logging, terlepas dari apakah dikirim atau tidak)
-        NotifikasiModel.insert(id_hasil, pesan)
+        # Simpan notifikasi ke database HANYA jika WhatsApp berhasil dikirim
+        if terkirim:
+            NotifikasiModel.insert(id_hasil, pesan)
+            print("[Database] Notifikasi berhasil disimpan ke database")
+        else:
+            print("[Database] Notifikasi tidak disimpan karena WhatsApp gagal dikirim")
         
         return jsonify({
             'status': 'success',
