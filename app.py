@@ -1,7 +1,7 @@
 from flask import Flask, redirect, url_for, session, flash, request, render_template, jsonify
 import config
 from utils import hash_password, verify_password
-from models import SensorBoxModel, DataSensorModel, HasilKlasifikasiModel, NotifikasiModel
+from models import SensorBoxModel, SensorModel, KlasifikasiModel, NotifikasiModel
 from functools import wraps  # tambahkan ini
 from database import init_connection_pool
 import numpy as np
@@ -657,7 +657,7 @@ def create_app():
         nama_pemilik   = sensor_box['nama_pemilik']
 
         # Simpan data sensor
-        id_data_sensor = DataSensorModel.insert(
+        id_data_sensor = SensorModel.insert(
             id_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan
         )
 
@@ -674,7 +674,7 @@ def create_app():
         print(f"[Notifikasi] Status saat ini: {status_air}, Status terakhir: {last_status}, Kirim: {should_send}, Alasan: {reason}")
 
         # Simpan hasil klasifikasi ke database SETELAH mengambil status terakhir
-        id_hasil = HasilKlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
+        id_hasil = KlasifikasiModel.insert(id_data_sensor, status_air, probabilitas)
 
         # Buat pesan notifikasi berdasarkan status klasifikasi
         from datetime import datetime
