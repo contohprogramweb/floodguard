@@ -155,11 +155,11 @@
 
 {% block extra_js %}
 <script>
-const labels = {{ chart_labels|safe }};
-const dataTinggi = {{ chart_tinggi|safe }};
-const dataSuhu   = {{ chart_suhu|safe }};
-const dataKelembaban = {{ chart_kelembaban|safe }};
-const dataHujan  = {{ chart_hujan|safe }};
+const labels = {{ chart_labels|safe }}.reverse();
+const dataTinggi = {{ chart_tinggi|safe }}.reverse();
+const dataSuhu   = {{ chart_suhu|safe }}.reverse();
+const dataKelembaban = {{ chart_kelembaban|safe }}.reverse();
+const dataHujan  = {{ chart_hujan|safe }}.reverse();
 
 const isMobile = window.innerWidth < 600;
 const ctx = document.getElementById('sensorChart').getContext('2d');
