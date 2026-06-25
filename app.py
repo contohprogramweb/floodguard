@@ -638,7 +638,8 @@ def create_app():
         kelembaban     = data.get('kelembaban')
         curah_hujan    = data.get('curah_hujan')
 
-        if not all([kode_sensorbox, tinggi_air, suhu, kelembaban, curah_hujan]):
+        # Validasi: pastikan semua field ada (bukan None), termasuk curah_hujan yang bisa bernilai 0
+        if kode_sensorbox is None or tinggi_air is None or suhu is None or kelembaban is None or curah_hujan is None:
             return jsonify({
                 'status': 'error',
                 'message': 'Field tidak lengkap.'
